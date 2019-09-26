@@ -5,6 +5,9 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
 
 #define BAUDRATE B38400
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
@@ -50,13 +53,13 @@ int main(int argc, char** argv)
     newtio.c_lflag = 0;
 
     newtio.c_cc[VTIME]    = 0;   /* inter-character timer unused */
-    newtio.c_cc[VMIN]     = 5;   /* blocking read until 5 chars received */
+    newtio.c_cc[VMIN]     = 1;   /* blocking read until 5 chars received */
 
 
 
   /* 
     VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a 
-    leitura do(s) próximo(s) caracter(es)
+    leitura do(s) prï¿½ximo(s) caracter(es)
   */
 
 
@@ -70,18 +73,29 @@ int main(int argc, char** argv)
 
     printf("New termios structure set\n");
 
+    char str[1000000];
+    char ch;
 
-    while (STOP==FALSE) {       /* loop for input */
-      res = read(fd,buf,255);   /* returns after 5 chars have been input */
-      buf[res]=0;               /* so we can printf... */
-      printf(":%s:%d\n", buf, res);
-      if (buf[0]=='z') STOP=TRUE;
+    for (int i = 0; STOP == FALSE; i++) {   
+      res = read(fd,&ch,1);   /* returns after 1 chars have been input */
+      str[i] = ch;
+      printf(":%s:%d\n", &ch, res);
+
+      if (ch == '\0') {
+        STOP=TRUE;
+      }
     }
 
 
 
+    printf("STR: %s\n", str);
+	  res = write(fd, str, strlen(str) + 1); 
+    printf("%d bytes written\n", res);  
+
+
+
   /* 
-    O ciclo WHILE deve ser alterado de modo a respeitar o indicado no guião 
+    O ciclo WHILE deve ser alterado de modo a respeitar o indicado no guiï¿½o 
   */
 
 
