@@ -6,6 +6,7 @@
 #include <termios.h>
 #include <stdio.h>
 #include <signal.h>
+#include <stdlib.h>
 
 #define BAUDRATE B38400
 #define MODEMDEVICE "/dev/ttyS1"
@@ -24,20 +25,25 @@
 volatile int STOP=FALSE;
 
 int flag=1, conta=1;
+struct termios oldtio,newtio;
+int fd,c, res;
 
 void atende()                   // atende alarme
 {
   printf("alarme # %d\n", conta);
   flag=1;
   conta++;
+  newtio.c_cc[VMIN]     = 0; 
+  if ( tcsetattr(fd,TCSANOW,&newtio) == -1) {
+      perror("tcsetattr");
+      exit(-1);
+    }
 }
 
 int main(int argc, char** argv)
 {
     (void) signal(SIGALRM, atende);  // instala  rotina que atende interrupcao
 
-    int fd,c, res;
-    struct termios oldtio,newtio;
     char buf[255];
     int i, sum = 0, speed = 0;
     
@@ -101,7 +107,14 @@ int main(int argc, char** argv)
     char info[5] = {FLAG, A, SET, BCC, FLAG};
     
   while(conta < 4){
+  	for(int i = 0; i < 5; i++) {
+      		res = write(fd,&info[i],1);
+
+     	 	printf("written: %02x\n", info[i]);
+    	}
+
     if(flag){
+<<<<<<< HEAD
       alarm(3);                 // activa alarme de 3s
       flag=0;
     }
@@ -120,11 +133,31 @@ int main(int argc, char** argv)
     // 
     
     if ( tcsetattr(fd,TCSANOW,&oldtio) == -1) {
+=======
+        alarm(3);                 // activa alarme de 3s
+        flag=0;
+    } 
+
+    char echo[255];
+    int bytes_lidos = read(fd, echo, 5);
+    if(bytes_lidos == 5) {
+    	printf("Echoing message: %02x\n", echo);
+    }
+    newtio.c_cc[VMIN]     = 5;
+    if ( tcsetattr(fd,TCSANOW,&newtio) == -1) {
+>>>>>>> e4ad0e945c3ea2fe4c2fb16ef26825d3b2a6ec30
       perror("tcsetattr");
       exit(-1);
-    }
-    
+    } 
+
+    if(!flag) break;
   }
+
+  if ( tcsetattr(fd,TCSANOW,&oldtio) == -1) {
+    perror("tcsetattr");
+    exit(-1);
+   }
+    
 
   close(fd);
   return 0;
