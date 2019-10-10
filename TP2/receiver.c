@@ -80,8 +80,8 @@ int read_control_frame(int fd, int control_field) {
 
 int write_control_frame(int fd, int control_field) {
     unsigned char flag =  FLAG;
-    a = A;
-    c = control_field;
+    unsigned char a = A;
+    unsigned char c = control_field;
     unsigned char bcc =  a ^ c;
     write(fd, &flag, 1);
     write(fd, &a, 1);
