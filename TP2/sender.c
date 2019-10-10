@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #define BAUDRATE B38400
 #define MODEMDEVICE "/dev/ttyS1"
@@ -22,22 +23,97 @@
 #define RR 0x05
 #define REJ 0x01
 
+#define START_STATE 0
+#define FLAG_RCV_STATE 1
+#define A_RCV_STATE 2
+#define C_RCV_STATE 3
+#define BCC_OK_STATE 4
+#define STOP_STATE 5
+
 volatile int STOP=FALSE;
 
-int flag=1, conta=1;
+int alarm_set=0, conta=1;
 struct termios oldtio,newtio;
 int fd,c, res;
+
+int read_control_frame(int fd, int control_field, bool alarme) {
+    if(alarme && !alarm_set){
+        alarm(3);                 // activa alarme de 3s
+        alarm_set=1;
+    } 
+    unsigned char byte;
+    int state = START_STATE;
+    unsigned char a;
+    unsigned char c;
+
+    while (state != STOP_STATE) {
+      int nbytes = read(fd,&byte,1);   /* returns after 1 chars have been input */
+      if(!alarm_set && alarme) return 1;
+      printf("Read %d bytes: %x\n", nbytes, byte);
+      switch(state) {
+        case START_STATE:
+          if (byte == FLAG)
+            state = FLAG_RCV_STATE;
+          break;
+        case FLAG_RCV_STATE:
+          if (byte == A) {
+            a = byte;
+            state = A_RCV_STATE;
+          }
+          else if (byte != FLAG)
+            state = START_STATE;
+          break;
+        case A_RCV_STATE:
+          if (byte == control_field) {
+            c = byte;
+            state = C_RCV_STATE;
+          }
+          else if (byte == FLAG)
+            state = FLAG_RCV_STATE;
+          else state = START_STATE;
+          break;
+        case C_RCV_STATE:
+          if (a ^ c == byte)
+            state = BCC_OK_STATE;
+          else if (byte == FLAG)
+            state = FLAG_RCV_STATE;
+          else state = START_STATE;
+          break;
+        case BCC_OK_STATE:
+          if (byte == FLAG)
+            state = STOP_STATE;
+          else state = START_STATE;
+          break;   
+      }
+      //printf("State: %d\n", state);
+    }
+
+    return 0;
+}
 
 void atende()                   // atende alarme
 {
   printf("alarme # %d\n", conta);
-  flag=1;
+  alarm_set=0;
   conta++;
   newtio.c_cc[VMIN]     = 0; 
   if ( tcsetattr(fd,TCSANOW,&newtio) == -1) {
       perror("tcsetattr");
       exit(-1);
     }
+}
+
+int write_control_frame(int fd, int control_field) {
+    unsigned char flag =  FLAG;
+    unsigned char a = A;
+    unsigned char c = control_field;
+    unsigned char bcc =  a ^ c;
+    write(fd, &flag, 1);
+    write(fd, &a, 1);
+    write(fd, &c, 1);
+    write(fd, &bcc, 1);
+    write(fd, &flag, 1);
+    return 0;
 }
 
 int main(int argc, char** argv)
@@ -80,7 +156,7 @@ int main(int argc, char** argv)
     newtio.c_lflag = 0;
 
     newtio.c_cc[VTIME]    = 0;   /* inter-character timer unused */
-    newtio.c_cc[VMIN]     = 5;   /* blocking read until 5 chars received */
+    newtio.c_cc[VMIN]     = 1;   /* blocking read until 5 chars received */
 
 
 
@@ -103,55 +179,17 @@ int main(int argc, char** argv)
     sleep(1);
 
     // Estabelecimento
-
-    char BCC = A^SET;
-    char info[5] = {FLAG, A, SET, BCC, FLAG};
     
   while(conta < 4){
-  	for(int i = 0; i < 5; i++) {
-      		res = write(fd,&info[i],1);
+  	write_control_frame(fd, SET);
 
-     	 	printf("written: %02x\n", info[i]);
-    	}
-
-    if(flag){
-<<<<<<< HEAD
-      alarm(3);                 // activa alarme de 3s
-      flag=0;
-    }
-
-    for(int i = 0; i < 5; i++) {
-      res = write(fd,&info[i],1);
-
-      printf("written: %02x\n", info[i]);
-    }
-
-    char echo[255];
-
-    read(fd, echo, 5);
-    printf("Echoing message: %s\n", echo);
-
-    // 
+    if(read_control_frame(fd, UA, true) == 0) break;
     
-    if ( tcsetattr(fd,TCSANOW,&oldtio) == -1) {
-=======
-        alarm(3);                 // activa alarme de 3s
-        flag=0;
-    } 
-
-    char echo[255];
-    int bytes_lidos = read(fd, echo, 5);
-    if(bytes_lidos == 5) {
-    	printf("Echoing message: %02x\n", echo);
-    }
-    newtio.c_cc[VMIN]     = 5;
+    newtio.c_cc[VMIN]     = 1;
     if ( tcsetattr(fd,TCSANOW,&newtio) == -1) {
->>>>>>> e4ad0e945c3ea2fe4c2fb16ef26825d3b2a6ec30
       perror("tcsetattr");
       exit(-1);
     } 
-
-    if(!flag) break;
   }
 
   if ( tcsetattr(fd,TCSANOW,&oldtio) == -1) {
