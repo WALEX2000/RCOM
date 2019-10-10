@@ -95,13 +95,15 @@ int main(int argc, char** argv)
 
     sleep(1);
 
+    // Estabelecimento
+
     char BCC = A^SET;
     char info[5] = {FLAG, A, SET, BCC, FLAG};
     
   while(conta < 4){
     if(flag){
-        alarm(3);                 // activa alarme de 3s
-        flag=0;
+      alarm(3);                 // activa alarme de 3s
+      flag=0;
     }
 
     for(int i = 0; i < 5; i++) {
@@ -115,6 +117,8 @@ int main(int argc, char** argv)
     read(fd, echo, 5);
     printf("Echoing message: %s\n", echo);
 
+    // 
+    
     if ( tcsetattr(fd,TCSANOW,&oldtio) == -1) {
       perror("tcsetattr");
       exit(-1);
