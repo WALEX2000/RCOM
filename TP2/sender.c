@@ -102,6 +102,8 @@ int main(int argc, char** argv)
 
     sleep(1);
 
+    // Estabelecimento
+
     char BCC = A^SET;
     char info[5] = {FLAG, A, SET, BCC, FLAG};
     
@@ -113,6 +115,26 @@ int main(int argc, char** argv)
     	}
 
     if(flag){
+<<<<<<< HEAD
+      alarm(3);                 // activa alarme de 3s
+      flag=0;
+    }
+
+    for(int i = 0; i < 5; i++) {
+      res = write(fd,&info[i],1);
+
+      printf("written: %02x\n", info[i]);
+    }
+
+    char echo[255];
+
+    read(fd, echo, 5);
+    printf("Echoing message: %s\n", echo);
+
+    // 
+    
+    if ( tcsetattr(fd,TCSANOW,&oldtio) == -1) {
+=======
         alarm(3);                 // activa alarme de 3s
         flag=0;
     } 
@@ -124,6 +146,7 @@ int main(int argc, char** argv)
     }
     newtio.c_cc[VMIN]     = 5;
     if ( tcsetattr(fd,TCSANOW,&newtio) == -1) {
+>>>>>>> e4ad0e945c3ea2fe4c2fb16ef26825d3b2a6ec30
       perror("tcsetattr");
       exit(-1);
     } 

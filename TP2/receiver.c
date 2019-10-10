@@ -17,8 +17,8 @@
 
 #define FLAG 0x07
 #define A 0x03
-#define C_SET 0x03
-#define C_UA 0x07
+#define SET 0x03
+#define UA 0x07
 
 
 #define START_STATE 0
@@ -27,6 +27,69 @@
 #define C_RCV_STATE 3
 #define BCC_OK_STATE 4
 #define STOP_STATE 5
+
+int read_control_frame(int fd, int control_field) {
+    unsigned char byte;
+    int state = START_STATE;
+    unsigned char a;
+    unsigned char c;
+
+    while (state != STOP_STATE) {
+      int nbytes = read(fd,&byte,1);   /* returns after 1 chars have been input */
+      printf("Read %d bytes: %x\n", nbytes, byte);
+      switch(state) {
+        case START_STATE:
+          if (byte == FLAG)
+            state = FLAG_RCV_STATE;
+          break;
+        case FLAG_RCV_STATE:
+          if (byte == A) {
+            a = byte;
+            state = A_RCV_STATE;
+          }
+          else if (byte != FLAG)
+            state = START_STATE;
+          break;
+        case A_RCV_STATE:
+          if (byte == control_field) {
+            c = byte;
+            state = C_RCV_STATE;
+          }
+          else if (byte == FLAG)
+            state = FLAG_RCV_STATE;
+          else state = START_STATE;
+          break;
+        case C_RCV_STATE:
+          if (a ^ c == byte)
+            state = BCC_OK_STATE;
+          else if (byte == FLAG)
+            state = FLAG_RCV_STATE;
+          else state = START_STATE;
+          break;
+        case BCC_OK_STATE:
+          if (byte == FLAG)
+            state = STOP_STATE;
+          else state = START_STATE;
+          break;   
+      }
+      //printf("State: %d\n", state);
+    }
+
+    return 0;
+}
+
+int write_control_frame(int fd, int control_field) {
+    unsigned char flag =  FLAG;
+    a = A;
+    c = control_field;
+    unsigned char bcc =  a ^ c;
+    write(fd, &flag, 1);
+    write(fd, &a, 1);
+    write(fd, &c, 1);
+    write(fd, &bcc, 1);
+    write(fd, &flag, 1);
+    return 0;
+}
 
 int main(int argc, char** argv)
 {
@@ -86,62 +149,8 @@ int main(int argc, char** argv)
 
     printf("New termios structure set\n");
 
-    unsigned char byte;
-
-    int state = START_STATE;
-    unsigned char a;
-    unsigned char c;
-
-    while (state != STOP_STATE) {
-      int nbytes = read(fd,&byte,1);   /* returns after 1 chars have been input */
-      printf("Read %d bytes: %x\n", nbytes, byte);
-      switch(state) {
-        case START_STATE:
-          if (byte == FLAG)
-            state = FLAG_RCV_STATE;
-          break;
-        case FLAG_RCV_STATE:
-          if (byte == A) {
-            a = byte;
-            state = A_RCV_STATE;
-          }
-          else if (byte != FLAG)
-            state = START_STATE;
-          break;
-        case A_RCV_STATE:
-          if (byte == C_SET) {
-            c = byte;
-            state = C_RCV_STATE;
-          }
-          else if (byte == FLAG)
-            state = FLAG_RCV_STATE;
-          else state = START_STATE;
-          break;
-        case C_RCV_STATE:
-          if (a ^ c == byte)
-            state = BCC_OK_STATE;
-          else if (byte == FLAG)
-            state = FLAG_RCV_STATE;
-          else state = START_STATE;
-          break;
-        case BCC_OK_STATE:
-          if (byte == FLAG)
-            state = STOP_STATE;
-          else state = START_STATE;
-          break;   
-      }
-      printf("State: %d\n", state);
-    }
-
-    unsigned char flag =  A ^ C_UA;
-    a = A;
-    c = C_UA;
-    unsigned char bcc =  A ^ C_UA;
-    write(fd, &flag, 1);
-    write(fd, &a, 1);
-    write(fd, &c, 1);
-    write(fd, &bcc, 1);
-    write(fd, &flag, 1);
+    read_control_frame(fd, SET);
+    write_control_frame(fd, UA);
     printf("Vou terminar\n");
 
     tcsetattr(fd,TCSANOW,&oldtio);
