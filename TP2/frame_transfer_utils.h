@@ -23,9 +23,6 @@
 #define BCC_OK_STATE 4
 #define STOP_STATE 5
 
-static int fd_set_blocking(int fd, bool blocking);
-static void alarm_handler();
-
 int read_control_frame(int fd, int control_field, bool enable_timeout, int timeout);
 
 int write_control_frame(int fd, int control_field);

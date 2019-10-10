@@ -64,7 +64,7 @@ int read_control_frame(int fd, int control_field, bool enable_timeout, int timeo
           else state = START_STATE;
           break;
         case C_RCV_STATE:
-          if (a ^ c == byte)
+          if ((a ^ c) == byte)
             state = BCC_OK_STATE;
           else if (byte == FLAG)
             state = FLAG_RCV_STATE;
