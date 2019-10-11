@@ -75,16 +75,29 @@ int main(int argc, char** argv)
     }
 
     printf("New termios structure set\n");
-   
+
+/* Teeest
+    struct data_frame_content test_content;
+    unsigned char bytes[3] = {FLAG, FLAG, FLAG};
+
+    test_content.bytes = bytes;
+    test_content.length = 3;
+
+    write_data_frame(fd, test_content);
+    */
+
     for (int i = 0; i < 3; i++) {
-      write_control_frame(fd, SET);
-      if(read_control_frame(fd, UA, true, 3) == 0) // sucesso
+      write_control_frame(fd, SET, A_SENDER);
+      if(read_control_frame(fd, UA, A_SENDER, true, 3) == 0) // sucesso
         break;
       if (i == 2) {
-        printf("TIMEOOOOOOOOOOOOOOOOOOOOOOOUT");
+        printf("TIMEOOOOOOOOOOOOOOOOOOOOOOOUT\n");
         exit(0);
       }
-  }
+    }
+
+
+
 
   if ( tcsetattr(fd,TCSANOW,&oldtio) == -1) {
     perror("tcsetattr");

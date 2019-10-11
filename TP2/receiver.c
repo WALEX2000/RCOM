@@ -76,8 +76,8 @@ int main(int argc, char** argv)
 
     printf("New termios structure set\n");
 
-    read_control_frame(fd, SET, false, 0);
-    write_control_frame(fd, UA);
+    read_control_frame(fd, SET, A_SENDER, false, 0);
+    write_control_frame(fd, UA, A_SENDER);
     printf("Vou terminar\n");
 
     tcsetattr(fd,TCSANOW,&oldtio);
