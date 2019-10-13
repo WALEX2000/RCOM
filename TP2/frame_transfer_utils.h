@@ -1,3 +1,5 @@
+#pragma once
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -27,6 +29,11 @@
 #define C_RCV_STATE     3
 #define BCC_OK_STATE    4
 #define STOP_STATE      5
+
+#define WAIT_DATA_STATE 6
+#define WAIT_DATA_NOBCC_STATE 7
+#define WAIT_DATA_ESC_STATE 8
+#define WAIT_FLAG_STATE 9
 
 #define ESC_BYTE 0x7d
 #define ESC_MASK 0x20

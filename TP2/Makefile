@@ -1,8 +1,8 @@
 CC=gcc
 CFLAGS=-I. -D_REENTRANT -lpthread
-DEPS = frame_transfer_utils.h
-OBJ_SENDER = frame_transfer_utils.c sender.c
-OBJ_RECEIVER = frame_transfer_utils.c receiver.c
+DEPS = frame_transfer_utils.h protocol_interface.h
+OBJ_SENDER = frame_transfer_utils.c sender.c protocol_interface.c
+OBJ_RECEIVER = frame_transfer_utils.c receiver.c protocol_interface.c
 
 all: sender receiver
 

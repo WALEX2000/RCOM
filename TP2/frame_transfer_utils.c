@@ -24,6 +24,14 @@ static void alarm_handler() {                // atende alarme
     fd_set_blocking(curr_fd_read, false);   
 }
 
+static bool verify_bcc(unsigned char bytes[], int length) {
+    unsigned char bcc2_check = 0;
+    for (int i = 0; i < length ; i++)
+        bcc2_check = bcc2_check ^ bytes[i];      
+
+    return bcc2_check == 0;
+}
+
 int read_control_frame(int fd, int control_field, int address, bool enable_timeout, int timeout) {
     if(enable_timeout){
         signal(SIGALRM, alarm_handler);  // instala  rotina que atende interrupcao
@@ -148,8 +156,100 @@ void write_data_frame(int fd, struct data_frame_content content) {
 }
 
 struct data_frame_content read_data_frame(int fd) {
-  struct data_frame_content ret;
-  ret.bytes = NULL;
-  ret.length = 0;
-  return ret;
+    int state = START_STATE;
+    unsigned char byte;
+    
+    unsigned char* bytes = malloc(100000);
+    int num_bytes_read = 0;
+  
+    struct data_frame_content content;
+    content.bytes = NULL;
+    content.length = 0;
+
+    while (state != STOP_STATE) {
+        int nbytes = read(fd, &byte, 1);   /* returns after 1 chars have been input */
+        printf("Read %d bytes: %x\n", nbytes, byte);
+        switch(state) {
+            case START_STATE:
+                if (byte == FLAG)
+                    state = FLAG_RCV_STATE;
+                break;
+            case FLAG_RCV_STATE:
+                if (byte == A_SENDER)
+                    state = A_RCV_STATE;
+                else if (byte != FLAG)
+                    state = START_STATE;
+                break;
+            case A_RCV_STATE:
+                if (byte == I_CTRL)
+                    state = C_RCV_STATE;
+                else if (byte == FLAG)
+                    state = FLAG_RCV_STATE;
+                else state = START_STATE;
+                break;
+            case C_RCV_STATE:
+                if ((A_SENDER ^ I_CTRL) == byte)
+                    state = WAIT_DATA_NOBCC_STATE;
+                else if (byte == FLAG)
+                    state = FLAG_RCV_STATE;
+                else state = START_STATE;
+                break; 
+            case WAIT_DATA_STATE:
+                if (byte == FLAG) {
+                    if (!verify_bcc(bytes, num_bytes_read)) {
+                      bytes[num_bytes_read] = byte;
+                      num_bytes_read++;
+                      state = WAIT_FLAG_STATE;
+                    }
+                    else state = STOP_STATE; 
+                }
+                else if (byte == ESC_BYTE)
+                    state = WAIT_DATA_ESC_STATE;
+                else {
+                    bytes[num_bytes_read] = byte;
+                    num_bytes_read++;
+                }
+                break;
+            case WAIT_DATA_NOBCC_STATE:
+                if (byte == FLAG) {
+                  bytes[num_bytes_read] = byte;
+                  num_bytes_read++;
+                  state = WAIT_FLAG_STATE;
+                }
+                else if (byte == ESC_BYTE)
+                    state = WAIT_DATA_ESC_STATE;
+                else {
+                    bytes[num_bytes_read] = byte;
+                    num_bytes_read++;
+                    state = WAIT_DATA_STATE;
+                }
+                break;
+            case WAIT_DATA_ESC_STATE:
+                if (byte == (ESC_MASK ^ FLAG) || byte == (ESC_MASK ^ ESC_BYTE))
+                    state = WAIT_DATA_NOBCC_STATE;
+                else return content;
+                bytes[num_bytes_read] = byte ^ ESC_MASK;
+                num_bytes_read++;
+                break;
+            case WAIT_FLAG_STATE:
+                if (byte == FLAG && verify_bcc(bytes, num_bytes_read))
+                  state = STOP_STATE;
+                else return content;
+                break;            
+            default: return content;
+
+        }
+    }
+
+
+    printf("----------------\n");
+    for (int i = 0; i < num_bytes_read ; i++) {
+        if (i != num_bytes_read - 1)
+            printf("content[%d] = %x\n", i, bytes[i]);
+    }
+
+    content.bytes = bytes;
+    content.length = num_bytes_read - 1;
+
+    return content;
 }
