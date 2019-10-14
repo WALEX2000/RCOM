@@ -26,5 +26,11 @@ int main(int argc, char** argv)
         printf("Error opening blablabla\n");
         exit(1);
     }
-    read_data_frame(fd);
+
+    frame_content fc = read_frame(fd, A_SENDER, I_0);
+
+    printf("----------------\n");
+    for (int i = 0; i < fc.length ; i++) {
+        printf("content[%d] = %x\n", i, fc.bytes[i]);
+    }
 }

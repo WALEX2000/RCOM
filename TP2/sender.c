@@ -19,17 +19,20 @@ int main(int argc, char **argv)
 
     int fd = llopen(COM2, TRANSMITTER);
     if (fd == -1) {
-        printf("Error opening blablabla\n");
+        printf("Error opening serial port\n");
         exit(1);
     }
+
     unsigned char bytes1[6] = {FLAG, FLAG, 0, 0x12, ESC_BYTE, ESC_BYTE};
 
-    struct data_frame_content dfc1;
+    frame_content dfc1;
     dfc1.bytes = bytes1;
     dfc1.length = 6;
+    dfc1.c_field = I_0;
+    dfc1.address = A_SENDER;
 
 
-    write_data_frame(fd, dfc1);
+    write_frame(fd, dfc1);
 
     return 0;
 }

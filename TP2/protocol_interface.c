@@ -60,8 +60,8 @@ int llopen(int port, int type) {
 
     if (type == TRANSMITTER) {
         for (int i = 0; i < MAX_ATTEMPTS; i++) {
-            write_control_frame(fd, SET, A_SENDER);
-            if(read_control_frame(fd, UA, A_SENDER, true, TIMEOUT_SECS) == 0) {// sucesso
+            write_control_frame(fd, A_SENDER, SET);
+            if(!read_frame_timeout(fd, A_SENDER, UA, TIMEOUT_SECS).timed_out) {// sucesso
                 printf("Successfully connected to receiver\n");
                 return fd;
             }
@@ -70,8 +70,8 @@ int llopen(int port, int type) {
         return -1;
     }
     else if (type == RECEIVER) {
-        read_control_frame(fd, SET, A_SENDER, false, 0);
-        write_control_frame(fd, UA, A_SENDER);
+        read_frame(fd, A_SENDER, SET);
+        write_control_frame(fd, A_SENDER, UA);
         printf("Successfully connected to transmitter\n");
         return fd;
     }

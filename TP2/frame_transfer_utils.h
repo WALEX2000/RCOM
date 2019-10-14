@@ -13,15 +13,21 @@
 #define CTRL_S BIT(6)
 #define CTRL_R BIT(7)
 
-#define FLAG        0x7e
-#define A_SENDER    0x03
-#define A_RCVR      0x01
-#define SET         0x03
-#define DISC        0x0B
-#define UA          0x07
-#define RR          0x05
-#define REJ         0x01
-#define I_CTRL      0x00
+#define FLAG      0x7e
+#define A_SENDER  0x03
+#define A_RCVR    0x01
+
+#define SET       0x03
+#define DISC      0x0B
+#define UA        0x07
+
+#define RR_0      0x05
+#define RR_1      0x85
+#define REJ_0     0x01
+#define REJ_1     0x81
+
+#define I_0       0x00
+#define I_1       0x40
 
 #define START_STATE     0
 #define FLAG_RCV_STATE  1
@@ -38,16 +44,17 @@
 #define ESC_BYTE 0x7d
 #define ESC_MASK 0x20
 
-struct data_frame_content {
+typedef struct {
+  int address;
+  int c_field;
   unsigned char* bytes;
   int length;
-};
+  bool timed_out;
+} frame_content;
 
 
-int read_control_frame(int fd, int control_field, int address, bool enable_timeout, int timeout);
+void write_control_frame(int fd, int address, int c_field);
+void write_frame(int fd, frame_content content);
 
-int write_control_frame(int fd, int control_field, int address);
-
-void write_data_frame(int fd, struct data_frame_content content);
-
-struct data_frame_content read_data_frame(int fd);
+frame_content read_frame(int fd, int expected_address, int expected_c);
+frame_content read_frame_timeout(int fd, int expected_address, int expected_c, int timeout_s);
