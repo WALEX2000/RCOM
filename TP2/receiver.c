@@ -33,4 +33,11 @@ int main(int argc, char** argv)
     for (int i = 0; i < fc.length ; i++) {
         printf("content[%d] = %x\n", i, fc.bytes[i]);
     }
+
+    if (llclose(fd) != 0) {
+        printf("Error closing serial port\n");
+        exit(1);
+    }
+
+    return 0;
 }

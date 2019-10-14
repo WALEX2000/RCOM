@@ -4,10 +4,12 @@
 #define MODEMDEVICE "/dev/ttyS1"
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 
-static struct {
-    int fd;
+struct global_vars {
+    int type;
     struct termios previous_tio;
-} global_vars;
+};
+
+static struct global_vars globals;
 
 int llopen(int port, int type) {
     struct termios oldtio, newtio;
@@ -32,13 +34,13 @@ int llopen(int port, int type) {
     if (fd <0) {
         perror(path); return -1; 
     }
-    global_vars.fd = fd;
 
     if ( tcgetattr(fd,&oldtio) == -1) { /* save current port settings */
       perror("tcgetattr");
       exit(-1);
     }
-    global_vars.previous_tio = oldtio;
+    globals.type = type;
+    globals.previous_tio = oldtio;
 
     bzero(&newtio, sizeof(newtio));
     newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
@@ -90,40 +92,35 @@ int llopen(int port, int type) {
 }
 
 int llclose(int fd) {
-    // TODO
-        // ---> DISC
-        // <--- DISC
-        // ---> UA
-
-    // Arranjar maneira fiavel e nao jabarda de guardar oldtio se possivel
+    // Arranjar maneira fiavel e nao jabarda de guardar oldtio se possivel <-- nao foi possivel
     
-    if (tcsetattr(fd, TCSANOW, &oldtio) == -1) {
+    if (tcsetattr(fd, TCSANOW, &globals.previous_tio) == -1) {
         perror("tcsetattr");
         exit(-1);
     }
 
-    if (type == TRANSMITTER) {
+    if (globals.type == TRANSMITTER) {
         for (int i = 0; i < MAX_ATTEMPTS; i++) {
-            write_control_frame(fd, DISC, A_SENDER);
-            if(read_control_frame(fd, DISC, A_SENDER, true, TIMEOUT_SECS) != 0)
-                continue;
-            write_control_frame(fd, UA, A_SENDER);
-            printf("Successfully disconnected from receiver\n");
+            write_control_frame(fd, A_SENDER, DISC);
+            if(!read_frame_timeout(fd, A_RCVR, DISC, TIMEOUT_SECS).timed_out) {
+                write_control_frame(fd, A_RCVR, UA);
+                printf("Successfully disconnected from receiver\n");
+                close(fd);
+                return 0;
+            }
         }
-        printf("Connection timed out\n");
+        printf("Connection timed out\n"); // Disconnection timed out xd
         return -1;
     }
-    else if (type == RECEIVER) {
-        read_control_frame(fd, DISC, A_SENDER, false, 0);
-        write_control_frame(fd, DISC, A_SENDER);
+    else if (globals.type == RECEIVER) {
+        read_frame(fd, A_SENDER, DISC);
+        write_control_frame(fd, A_RCVR, DISC);
+        read_frame(fd, A_RCVR, UA);
         printf("Successfully disconnected from transmitter\n");
-        return fd;
+        close(fd);
+        return 0;
     }
     else {
         printf("type must be %d or %d \n", TRANSMITTER, RECEIVER);
         return -1;
-    }
-
-    close(fd);
-    return 0;
-}
+    }}

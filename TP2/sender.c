@@ -34,5 +34,10 @@ int main(int argc, char **argv)
 
     write_frame(fd, dfc1);
 
+    if (llclose(fd) != 0) {
+        printf("Error closing serial port\n");
+        exit(1);
+    }
+
     return 0;
 }

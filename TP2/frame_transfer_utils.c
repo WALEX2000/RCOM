@@ -106,6 +106,8 @@ void write_frame(int fd, frame_content content) {
     }
     else {
         unsigned char frame[5] = {flag, a, c, bcc, flag};
+
+        printf("Written 5 bytes: FLAG = %x, A = %x, C = %x, BCC = %x, FLAG = %x\n", flag, a, c, bcc, flag);
         write(fd, frame, 5);
     }
 }
