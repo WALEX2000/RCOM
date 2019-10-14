@@ -16,7 +16,6 @@ int llopen(int port, int type) {
 
     char path[11] = "/dev/pts/?";
     switch (port) {
-        // eu duvido que seja isto que os COMs sejam mas olha
         case COM1: path[9] = '0'; break;
         case COM2: path[9] = '1'; break;
         case COM3: path[9] = '2'; break;
@@ -92,8 +91,6 @@ int llopen(int port, int type) {
 }
 
 int llclose(int fd) {
-    // Arranjar maneira fiavel e nao jabarda de guardar oldtio se possivel <-- nao foi possivel
-    
     if (tcsetattr(fd, TCSANOW, &globals.previous_tio) == -1) {
         perror("tcsetattr");
         exit(-1);
@@ -123,4 +120,9 @@ int llclose(int fd) {
     else {
         printf("type must be %d or %d \n", TRANSMITTER, RECEIVER);
         return -1;
-    }}
+    }
+}
+
+int llwrite(int fd, char * buffer, int length) {
+    return 0;
+}

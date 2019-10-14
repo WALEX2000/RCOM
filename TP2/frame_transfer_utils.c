@@ -126,8 +126,8 @@ void write_control_frame(int fd, int address, int c_field) {
 frame_content read_frame_general(int fd, int expected_address, int expected_c[2], bool timeout_enabled) {
     int state = START_STATE;
     unsigned char byte;
-    unsigned char* bytes = malloc(100000);
-    int num_bytes_read = 0;
+    int num_bytes_read = 0, bytesArraySize = 2;
+    unsigned char* bytes = malloc(bytesArraySize);
   
     frame_content content = create_frame_content();
 
@@ -169,6 +169,10 @@ frame_content read_frame_general(int fd, int expected_address, int expected_c[2]
             case WAIT_DATA_STATE:
                 if (byte == FLAG) {
                     if (!verify_bcc(bytes, num_bytes_read)) {
+                      if(num_bytes_read + 1 > bytesArraySize) {
+                        bytesArraySize *= 2;
+                        bytes = realloc(bytes, bytesArraySize);
+                      }
                       bytes[num_bytes_read] = byte;
                       num_bytes_read++;
                       state = WAIT_FLAG_STATE;
@@ -178,12 +182,20 @@ frame_content read_frame_general(int fd, int expected_address, int expected_c[2]
                 else if (byte == ESC_BYTE)
                     state = WAIT_DATA_ESC_STATE;
                 else {
+                    if(num_bytes_read + 1 > bytesArraySize) {
+                      bytesArraySize *= 2;
+                      bytes = realloc(bytes, bytesArraySize);
+                    }
                     bytes[num_bytes_read] = byte;
                     num_bytes_read++;
                 }
                 break;
             case WAIT_DATA_NOBCC_STATE:
                 if (byte == FLAG) {
+                  if(num_bytes_read + 1 > bytesArraySize) {
+                    bytesArraySize *= 2;
+                    bytes = realloc(bytes, bytesArraySize);
+                  }
                   bytes[num_bytes_read] = byte;
                   num_bytes_read++;
                   state = WAIT_FLAG_STATE;
@@ -191,6 +203,10 @@ frame_content read_frame_general(int fd, int expected_address, int expected_c[2]
                 else if (byte == ESC_BYTE)
                     state = WAIT_DATA_ESC_STATE;
                 else {
+                    if(num_bytes_read + 1 > bytesArraySize) {
+                      bytesArraySize *= 2;
+                      bytes = realloc(bytes, bytesArraySize);
+                    }
                     bytes[num_bytes_read] = byte;
                     num_bytes_read++;
                     state = WAIT_DATA_STATE;
@@ -200,6 +216,10 @@ frame_content read_frame_general(int fd, int expected_address, int expected_c[2]
                 if (byte == (ESC_MASK ^ FLAG) || byte == (ESC_MASK ^ ESC_BYTE))
                     state = WAIT_DATA_NOBCC_STATE;
                 else return content;
+                if(num_bytes_read + 1 > bytesArraySize) {
+                  bytesArraySize *= 2;
+                  bytes = realloc(bytes, bytesArraySize);
+                }
                 bytes[num_bytes_read] = byte ^ ESC_MASK;
                 num_bytes_read++;
                 break;

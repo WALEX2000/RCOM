@@ -21,7 +21,7 @@
 int main(int argc, char** argv)
 {
   
-    int fd = llopen(COM1, RECEIVER);
+    int fd = llopen(COM3, RECEIVER);
     if (fd == -1) {
         printf("Error opening blablabla\n");
         exit(1);
