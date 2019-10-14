@@ -4,6 +4,11 @@
 #define MODEMDEVICE "/dev/ttyS1"
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 
+static struct {
+    int fd;
+    struct termios previous_tio;
+} global_vars;
+
 int llopen(int port, int type) {
     struct termios oldtio, newtio;
 
@@ -27,11 +32,13 @@ int llopen(int port, int type) {
     if (fd <0) {
         perror(path); return -1; 
     }
+    global_vars.fd = fd;
 
     if ( tcgetattr(fd,&oldtio) == -1) { /* save current port settings */
       perror("tcgetattr");
       exit(-1);
     }
+    global_vars.previous_tio = oldtio;
 
     bzero(&newtio, sizeof(newtio));
     newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
@@ -89,12 +96,33 @@ int llclose(int fd) {
         // ---> UA
 
     // Arranjar maneira fiavel e nao jabarda de guardar oldtio se possivel
-    /*
+    
     if (tcsetattr(fd, TCSANOW, &oldtio) == -1) {
         perror("tcsetattr");
         exit(-1);
     }
-    */
+
+    if (type == TRANSMITTER) {
+        for (int i = 0; i < MAX_ATTEMPTS; i++) {
+            write_control_frame(fd, DISC, A_SENDER);
+            if(read_control_frame(fd, DISC, A_SENDER, true, TIMEOUT_SECS) != 0)
+                continue;
+            write_control_frame(fd, UA, A_SENDER);
+            printf("Successfully disconnected from receiver\n");
+        }
+        printf("Connection timed out\n");
+        return -1;
+    }
+    else if (type == RECEIVER) {
+        read_control_frame(fd, DISC, A_SENDER, false, 0);
+        write_control_frame(fd, DISC, A_SENDER);
+        printf("Successfully disconnected from transmitter\n");
+        return fd;
+    }
+    else {
+        printf("type must be %d or %d \n", TRANSMITTER, RECEIVER);
+        return -1;
+    }
 
     close(fd);
     return 0;
