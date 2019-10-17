@@ -122,8 +122,7 @@ void write_control_frame(int fd, int address, int c_field) {
   write_frame(fd, content);
 }
 
-// nao acedido por fora
-frame_content read_frame_general(int fd, int expected_address, int expected_c[2], bool timeout_enabled) {
+static frame_content read_frame_general(int fd, int expected_address, int expected_c[2], bool timeout_enabled) {
     int state = START_STATE;
     unsigned char byte;
     int num_bytes_read = 0, bytesArraySize = 2;
@@ -252,9 +251,6 @@ frame_content read_frame_general(int fd, int expected_address, int expected_c[2]
     return content;
 }
 
-
-// acedido por fora
-
 frame_content read_frame(int fd, int expected_address, int expected_c) {
   int expected_cs[2] = {expected_c, expected_c};
   return read_frame_general(fd, expected_address, expected_cs, false);
@@ -266,4 +262,21 @@ frame_content read_frame_timeout(int fd, int expected_address, int expected_c, i
   frame_content ret = read_frame_general(fd, expected_address, expected_cs, true);
   disable_timeout();
   return ret;
+}
+
+bool read_ack_frame(int fd, int timeout_s, bool ns) {
+  int ack, nack;
+  if(ns) {
+    ack = RR_0;
+    nack = REJ_1;
+  } else {
+    ack = RR_1;
+    nack = REJ_0;
+  }
+  
+  int expected_cs[2] = {ack, nack};
+  setup_timeout(fd, timeout_s);
+  frame_content ret = read_frame_general(fd, A_SENDER, expected_cs, true);
+  disable_timeout();
+  return (ret.c_field == ack);
 }

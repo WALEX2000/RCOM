@@ -7,8 +7,10 @@
 struct global_vars {
     int type;
     struct termios previous_tio;
+    bool opened;
 };
 
+static bool ns = 0, nr = 0;
 static struct global_vars globals;
 
 int llopen(int port, int type) {
@@ -40,6 +42,7 @@ int llopen(int port, int type) {
     }
     globals.type = type;
     globals.previous_tio = oldtio;
+    globals.opened = true;
 
     bzero(&newtio, sizeof(newtio));
     newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
@@ -91,6 +94,11 @@ int llopen(int port, int type) {
 }
 
 int llclose(int fd) {
+    if(globals.opened == false) {
+        printf("No connection open at the moment\n");
+        return -1;
+    }
+
     if (tcsetattr(fd, TCSANOW, &globals.previous_tio) == -1) {
         perror("tcsetattr");
         exit(-1);
@@ -101,28 +109,46 @@ int llclose(int fd) {
             write_control_frame(fd, A_SENDER, DISC);
             if(!read_frame_timeout(fd, A_RCVR, DISC, TIMEOUT_SECS).timed_out) {
                 write_control_frame(fd, A_RCVR, UA);
-                printf("Successfully disconnected from receiver\n");
                 close(fd);
+                globals.opened = false;
+                printf("Successfully disconnected from receiver\n");
                 return 0;
             }
         }
-        printf("Connection timed out\n"); // Disconnection timed out xd
+        printf("Disconnection timed out\n");
         return -1;
     }
     else if (globals.type == RECEIVER) {
         read_frame(fd, A_SENDER, DISC);
         write_control_frame(fd, A_RCVR, DISC);
         read_frame(fd, A_RCVR, UA);
-        printf("Successfully disconnected from transmitter\n");
         close(fd);
+        globals.opened = false;
+        printf("Successfully disconnected from transmitter\n");
         return 0;
-    }
-    else {
-        printf("type must be %d or %d \n", TRANSMITTER, RECEIVER);
-        return -1;
     }
 }
 
 int llwrite(int fd, char * buffer, int length) {
-    return 0;
+    frame_content content;
+    content.address = A_SENDER;
+    content.bytes = buffer;
+    content.c_field = ns? I_1 : I_0;
+    content.length = length;
+    content.timed_out = false;
+    for(int i = 0; i < MAX_ATTEMPTS; i++) {
+        write_frame(fd, content);
+        bool ack = read_ack_frame(fd, TIMEOUT_SECS, ns);
+        if(ack) {
+            nr = !nr; //dps vemos
+            ns = !ns;
+            return length;
+        }
+    }
+    return -1;
+}
+
+int llread(int fd, char * buffer) {
+    frame_content frame = read_frame(fd, A_SENDER, nr?I_0:I_1);
+    return 69;
 }

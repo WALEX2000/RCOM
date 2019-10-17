@@ -58,3 +58,4 @@ void write_frame(int fd, frame_content content);
 
 frame_content read_frame(int fd, int expected_address, int expected_c);
 frame_content read_frame_timeout(int fd, int expected_address, int expected_c, int timeout_s);
+bool read_ack_frame(int fd, int timeout_s, bool ns);
