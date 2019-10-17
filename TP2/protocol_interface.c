@@ -149,6 +149,35 @@ int llwrite(int fd, char * buffer, int length) {
 }
 
 int llread(int fd, char * buffer) {
-    frame_content frame = read_frame(fd, A_SENDER, nr?I_0:I_1);
-    return 69;
+    frame_content frame = read_frame(fd, A_SENDER, [I_0,I_1,DISC]); //Temos de arranjar manneira de aceitar estes 3 c_fields
+
+    //now check if read was successful
+    if(frame.bytes == NULL && frame.c_field != DISC) {//if NACK
+        int c_field;
+        if (frame.c_field == I_0) c_field = REJ_0;
+        else if(frame.c_field == I_1) c_field = REJ_1;
+
+        write_control_frame(fd, A_SENDER, c_field);
+        return -1;
+    }
+    else if(frame.bytes != NULL) { //if ACK
+        int c_field;
+        if (frame.c_field == I_0) {
+            c_field = RR_1;
+            nr = true; //??? ja estou a ficar confuso
+        }
+        else if(frame.c_field == I_1) {
+             c_field = RR_0;
+             nr = false;  //??? mesma confusão que a de cima
+        }
+        else return -1; //not supposed to happen?
+
+        write_control_frame(fd, A_SENDER, c_field);
+        buffer = frame.bytes;
+        return frame.length;
+    }
+    else {//if DISC
+        //Dunno how to Disconnect (só fazer exit(0)?)
+        return -1; //not sure if correct return
+    }
 }
