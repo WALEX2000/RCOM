@@ -5,6 +5,14 @@ static bool alarm_rang = false;
 static int alarm_num = 1;
 static int curr_fd_read;
 
+static bool byteIsInArray(unsigned char byte, int * array, int arraySize) {
+  for(unsigned int i = 0; i < arraySize; i++) {
+    if(array[i] == byte)
+      return true;
+  }
+  return false;
+}
+
 static int fd_set_blocking(int fd, bool blocking) {
     /* Save the current flags */
     int flags = fcntl(fd, F_GETFL, 0);
@@ -122,7 +130,7 @@ void write_control_frame(int fd, int address, int c_field) {
   write_frame(fd, content);
 }
 
-static frame_content read_frame_general(int fd, int expected_address, int expected_c[2], bool timeout_enabled) {
+static frame_content read_frame_general(int fd, int expected_address, int * expected_c_values, int c_values_array_size, bool timeout_enabled) {
     int state = START_STATE;
     unsigned char byte;
     int num_bytes_read = 0, bytesArraySize = 2;
@@ -147,7 +155,7 @@ static frame_content read_frame_general(int fd, int expected_address, int expect
                     state = START_STATE;
                 break;
             case A_RCV_STATE:
-                if (byte == expected_c[0] || byte == expected_c[1]) {
+                if (byteIsInArray(byte, expected_c_values, c_values_array_size)) {
                     content.c_field = byte;
                     state = C_RCV_STATE;
                 }
@@ -251,17 +259,15 @@ static frame_content read_frame_general(int fd, int expected_address, int expect
     return content;
 }
 
-frame_content read_frame(int fd, int expected_address, int expected_c) {
-  int expected_cs[2] = {expected_c, expected_c};
-  return read_frame_general(fd, expected_address, expected_cs, false);
+frame_content read_frame(int fd, int expected_address, int * expected_cs, int expected_cs_size) {
+  return read_frame_general(fd, expected_address, expected_cs, expected_cs_size, false);
 }
 
-frame_content read_frame_timeout(int fd, int expected_address, int expected_c, int timeout_s) {  
-  int expected_cs[2] = {expected_c, expected_c};
+frame_content read_frame_timeout(int fd, int expected_address, int * expected_cs, int expected_cs_size, int timeout_s) {
   setup_timeout(fd, timeout_s);
-  frame_content ret = read_frame_general(fd, expected_address, expected_cs, true);
+  frame_content frame = read_frame_general(fd, expected_address, expected_cs, expected_cs_size, true);
   disable_timeout();
-  return ret;
+  return frame;
 }
 
 bool read_ack_frame(int fd, int timeout_s, bool ns) {
@@ -274,9 +280,11 @@ bool read_ack_frame(int fd, int timeout_s, bool ns) {
     nack = REJ_0;
   }
   
-  int expected_cs[2] = {ack, nack};
+  int * expected_cs = malloc(2);
+  expected_cs[0] = ack;
+  expected_cs[1] = nack;
   setup_timeout(fd, timeout_s);
-  frame_content ret = read_frame_general(fd, A_SENDER, expected_cs, true);
+  frame_content ret = read_frame_general(fd, A_SENDER, expected_cs, 2, true);
   disable_timeout();
   return (ret.c_field == ack);
 }

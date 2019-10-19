@@ -72,16 +72,22 @@ int llopen(int port, int type) {
     if (type == TRANSMITTER) {
         for (int i = 0; i < MAX_ATTEMPTS; i++) {
             write_control_frame(fd, A_SENDER, SET);
-            if(!read_frame_timeout(fd, A_SENDER, UA, TIMEOUT_SECS).timed_out) {// sucesso
+            int * expected_cs = malloc(1);
+            expected_cs[0] = UA;
+            if(!read_frame_timeout(fd, A_SENDER, expected_cs, 1, TIMEOUT_SECS).timed_out) {// sucesso
                 printf("Successfully connected to receiver\n");
+                free(expected_cs);
                 return fd;
             }
+            free(expected_cs);
         }
         printf("Connection timed out\n");
         return -1;
     }
     else if (type == RECEIVER) {
-        read_frame(fd, A_SENDER, SET);
+        int * expected_cs = malloc(1);
+        expected_cs[0] = SET;
+        read_frame(fd, A_SENDER, expected_cs, 1);
         write_control_frame(fd, A_SENDER, UA);
         printf("Successfully connected to transmitter\n");
         return fd;
@@ -107,29 +113,37 @@ int llclose(int fd) {
     if (globals.type == TRANSMITTER) {
         for (int i = 0; i < MAX_ATTEMPTS; i++) {
             write_control_frame(fd, A_SENDER, DISC);
-            if(!read_frame_timeout(fd, A_RCVR, DISC, TIMEOUT_SECS).timed_out) {
+            int * expected_cs = malloc(1);
+            expected_cs[0] = DISC;
+            if(!read_frame_timeout(fd, A_RCVR, expected_cs, 1, TIMEOUT_SECS).timed_out) {
+                free(expected_cs);
                 write_control_frame(fd, A_RCVR, UA);
                 close(fd);
                 globals.opened = false;
                 printf("Successfully disconnected from receiver\n");
                 return 0;
             }
+            free(expected_cs);
         }
         printf("Disconnection timed out\n");
         return -1;
     }
     else if (globals.type == RECEIVER) {
-        read_frame(fd, A_SENDER, DISC);
+        int * expected_cs = malloc(1);
+        expected_cs[0] = DISC;
+        read_frame(fd, A_SENDER, expected_cs, 1);
         write_control_frame(fd, A_RCVR, DISC);
-        read_frame(fd, A_RCVR, UA);
+        expected_cs[0] = UA;
+        read_frame(fd, A_RCVR, expected_cs, 1);
         close(fd);
         globals.opened = false;
         printf("Successfully disconnected from transmitter\n");
         return 0;
     }
+    else return -1;  
 }
 
-int llwrite(int fd, char * buffer, int length) {
+int llwrite(int fd, unsigned char * buffer, int length) {
     frame_content content;
     content.address = A_SENDER;
     content.bytes = buffer;
@@ -148,8 +162,13 @@ int llwrite(int fd, char * buffer, int length) {
     return -1;
 }
 
-int llread(int fd, char * buffer) {
-    frame_content frame = read_frame(fd, A_SENDER, [I_0,I_1,DISC]); //Temos de arranjar manneira de aceitar estes 3 c_fields
+int llread(int fd, unsigned char * buffer) {
+    int * expected_cs = malloc(3);
+    expected_cs[0] = I_0;
+    expected_cs[1] = I_1;
+    expected_cs[2] = DISC;
+    frame_content frame = read_frame(fd, A_SENDER, expected_cs, 3); //Temos de arranjar manneira de aceitar estes 3 c_fields
+    free(expected_cs);
 
     //now check if read was successful
     if(frame.bytes == NULL && frame.c_field != DISC) {//if NACK

@@ -17,7 +17,7 @@ int main(int argc, char **argv)
 {
 
 
-    int fd = llopen(COM2, TRANSMITTER);
+    int fd = llopen(COM1, TRANSMITTER);
     if (fd == -1) {
         printf("Error opening serial port\n");
         exit(1);

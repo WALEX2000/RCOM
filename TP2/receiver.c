@@ -21,13 +21,16 @@
 int main(int argc, char** argv)
 {
   
-    int fd = llopen(COM3, RECEIVER);
+    int fd = llopen(COM2, RECEIVER);
     if (fd == -1) {
         printf("Error opening blablabla\n");
         exit(1);
     }
 
-    frame_content fc = read_frame(fd, A_SENDER, I_0);
+    int * expected_cs = malloc(1);
+    expected_cs[0] = I_0;
+    frame_content fc = read_frame(fd, A_SENDER, expected_cs, 1);
+    free(expected_cs);
 
     printf("----------------\n");
     for (int i = 0; i < fc.length ; i++) {
