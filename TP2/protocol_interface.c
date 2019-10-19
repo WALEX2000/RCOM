@@ -181,25 +181,19 @@ int llread(int fd, unsigned char * buffer) {
     else if(frame.bytes != NULL) { //if ACK
         int c_field;
         if (frame.c_field == I_0) {
-            if(nr == false) {
-                c_field = REJ_0;
-            } else if (nr == true) {
-                c_field = RR_1;
-                nr = false;
-            }
+            c_field = RR_1;
+            nr = true;
         }
         else if(frame.c_field == I_1) {
-            if(nr == true) {
-                c_field = REJ_1;
-            } else if (nr == false) {
-                c_field = RR_0;
-                nr = true;
-            }
+            c_field = RR_0;
+            nr = false;
         }
         else return -1;
 
         write_control_frame(fd, A_SENDER, c_field);
-        buffer = frame.bytes;
+        for(unsigned int i = 0; i < frame.length; i++) {
+            buffer[i] = frame.bytes[i];
+        }
         return frame.length;
     }
     else {

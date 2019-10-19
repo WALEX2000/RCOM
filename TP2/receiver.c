@@ -27,14 +27,23 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    int * expected_cs = malloc(1);
-    expected_cs[0] = I_0;
-    frame_content fc = read_frame(fd, A_SENDER, expected_cs, 1);
-    free(expected_cs);
-
+    unsigned char * buffer = malloc(20);
+    int bufferSize = llread(fd, buffer);
     printf("----------------\n");
-    for (int i = 0; i < fc.length ; i++) {
-        printf("content[%d] = %x\n", i, fc.bytes[i]);
+    for (int i = 0; i < bufferSize ; i++) {
+        printf("content[%d] = %c\n", i, buffer[i]);
+    }
+
+    bufferSize = llread(fd, buffer);
+    printf("----------------\n");
+    for (int i = 0; i < bufferSize ; i++) {
+        printf("content[%d] = %c\n", i, buffer[i]);
+    }
+
+    bufferSize = llread(fd, buffer);
+    printf("----------------\n");
+    for (int i = 0; i < bufferSize ; i++) {
+        printf("content[%d] = %c\n", i, buffer[i]);
     }
 
     if (llclose(fd) != 0) {

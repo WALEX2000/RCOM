@@ -23,16 +23,24 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    unsigned char bytes1[6] = {FLAG, FLAG, 0, 0x12, ESC_BYTE, ESC_BYTE};
+    unsigned char * buffer = malloc(3);
+    buffer[0] = 'o';
+    buffer[1] = 'l';
+    buffer[2] = 'a';
+    llwrite(fd, buffer, 3);
 
-    frame_content dfc1;
-    dfc1.bytes = bytes1;
-    dfc1.length = 6;
-    dfc1.c_field = I_0;
-    dfc1.address = A_SENDER;
+    buffer = malloc(2);
+    buffer[0] = 'x';
+    buffer[1] = 'd';
+    llwrite(fd, buffer, 2);
 
-
-    write_frame(fd, dfc1);
+    buffer = malloc(5);
+    buffer[0] = 'a';
+    buffer[1] = 'a';
+    buffer[2] = 'a';
+    buffer[3] = 'a';
+    buffer[4] = 'a';
+    llwrite(fd, buffer, 5);
 
     if (llclose(fd) != 0) {
         printf("Error closing serial port\n");

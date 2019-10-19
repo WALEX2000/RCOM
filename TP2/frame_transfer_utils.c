@@ -106,16 +106,16 @@ void write_frame(int fd, frame_content content) {
 
         write(fd, message, message_size);
 
-        for (int i = 0; i < message_size; i++) {
+        /*for (int i = 0; i < message_size; i++) {
           printf("message[%d] = %x\n", i, message[i]);
-        }
+        }*/
 
         free(message);
     }
     else {
         unsigned char frame[5] = {flag, a, c, bcc, flag};
 
-        printf("Written 5 bytes: FLAG = %x, A = %x, C = %x, BCC = %x, FLAG = %x\n", flag, a, c, bcc, flag);
+        //printf("Written 5 bytes: FLAG = %x, A = %x, C = %x, BCC = %x, FLAG = %x\n", flag, a, c, bcc, flag);
         write(fd, frame, 5);
     }
 }
@@ -142,7 +142,7 @@ static frame_content read_frame_general(int fd, int expected_address, int * expe
         int nbytes = read(fd, &byte, 1);   /* returns after 1 chars have been input */
         if(timeout_enabled && alarm_rang) 
           break;
-        printf("Read %d bytes: %x | %d \n", nbytes, byte, state);
+        //printf("Read %d bytes: %x | %d \n", nbytes, byte, state);
         switch(state) {
             case START_STATE:
                 if (byte == FLAG)
@@ -240,7 +240,8 @@ static frame_content read_frame_general(int fd, int expected_address, int * expe
                 return content;
               else state = START_STATE;
               break;   
-            default: return content;
+            default: 
+              return content;
 
         }
     }
@@ -251,7 +252,6 @@ static frame_content read_frame_general(int fd, int expected_address, int * expe
       content.timed_out = true;
       return content;
     }
-
 
     content.bytes = bytes;
     content.length = num_bytes_read - 1;
