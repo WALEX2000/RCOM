@@ -154,7 +154,6 @@ int llwrite(int fd, unsigned char * buffer, int length) {
         write_frame(fd, content);
         bool ack = read_ack_frame(fd, TIMEOUT_SECS, ns);
         if(ack) {
-            nr = !nr; //dps vemos
             ns = !ns;
             return length;
         }
@@ -167,7 +166,7 @@ int llread(int fd, unsigned char * buffer) {
     expected_cs[0] = I_0;
     expected_cs[1] = I_1;
     expected_cs[2] = DISC;
-    frame_content frame = read_frame(fd, A_SENDER, expected_cs, 3); //Temos de arranjar manneira de aceitar estes 3 c_fields
+    frame_content frame = read_frame(fd, A_SENDER, expected_cs, 3);
     free(expected_cs);
 
     //now check if read was successful
@@ -182,21 +181,28 @@ int llread(int fd, unsigned char * buffer) {
     else if(frame.bytes != NULL) { //if ACK
         int c_field;
         if (frame.c_field == I_0) {
-            c_field = RR_1;
-            nr = true; //??? ja estou a ficar confuso
+            if(nr == false) {
+                c_field = REJ_0;
+            } else if (nr == true) {
+                c_field = RR_1;
+                nr = false;
+            }
         }
         else if(frame.c_field == I_1) {
-             c_field = RR_0;
-             nr = false;  //??? mesma confusão que a de cima
+            if(nr == true) {
+                c_field = REJ_1;
+            } else if (nr == false) {
+                c_field = RR_0;
+                nr = true;
+            }
         }
-        else return -1; //not supposed to happen?
+        else return -1;
 
         write_control_frame(fd, A_SENDER, c_field);
         buffer = frame.bytes;
         return frame.length;
     }
-    else {//if DISC
-        //Dunno how to Disconnect (só fazer exit(0)?)
-        return -1; //not sure if correct return
+    else {
+        return -1;
     }
 }

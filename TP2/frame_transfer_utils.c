@@ -67,7 +67,7 @@ frame_content create_frame_content() {
 void write_frame(int fd, frame_content content) {
     unsigned char flag =  FLAG;
     unsigned char a = content.address;
-    unsigned char c = content.c_field; // Nao sei o que se poe em N(s) -> ja sei mas fica para depois
+    unsigned char c = content.c_field;
     unsigned char bcc =  a ^ c;  
 
     if (c == I_0 || c == I_1) {
