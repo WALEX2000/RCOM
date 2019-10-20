@@ -41,6 +41,7 @@ void setup_timeout(int fd, int timeout_s) {
 
 void disable_timeout() {
     alarm(0);
+    alarm_num = 1;
 }
 
 
@@ -52,8 +53,6 @@ bool verify_bcc(unsigned char bytes[], int length) {
     return bcc2_check == 0;
 }
 
-    // multiple reads (I / DISC)
-
 frame_content create_frame_content() {
   frame_content content;
   content.bytes = NULL;
@@ -63,6 +62,8 @@ frame_content create_frame_content() {
   content.timed_out = false;
   return content;
 }
+
+//static int screwupvar = 0;
 
 void write_frame(int fd, frame_content content) {
     unsigned char flag =  FLAG;
@@ -85,8 +86,6 @@ void write_frame(int fd, frame_content content) {
         }
 
         unsigned char* message = malloc(message_size);
-
-
         message[0] = flag;
         message[1] = a;
         message[2] = c;
@@ -139,7 +138,7 @@ static frame_content read_frame_general(int fd, int expected_address, int * expe
     frame_content content = create_frame_content();
 
     while (state != STOP_STATE) {
-        int nbytes = read(fd, &byte, 1);   /* returns after 1 chars have been input */
+        /* int nbytes = */ read(fd, &byte, 1);   /* returns after 1 chars have been input */
         if(timeout_enabled && alarm_rang) 
           break;
         //printf("Read %d bytes: %x | %d \n", nbytes, byte, state);

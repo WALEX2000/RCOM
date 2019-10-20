@@ -23,24 +23,13 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    unsigned char * buffer = malloc(3);
-    buffer[0] = 'o';
-    buffer[1] = 'l';
-    buffer[2] = 'a';
-    llwrite(fd, buffer, 3);
+    unsigned char buffer1[] = "ola";
+    unsigned char buffer2[] = "xd";
+    unsigned char buffer3[] = "aaaaa";
 
-    buffer = malloc(2);
-    buffer[0] = 'x';
-    buffer[1] = 'd';
-    llwrite(fd, buffer, 2);
-
-    buffer = malloc(5);
-    buffer[0] = 'a';
-    buffer[1] = 'a';
-    buffer[2] = 'a';
-    buffer[3] = 'a';
-    buffer[4] = 'a';
-    llwrite(fd, buffer, 5);
+    llwrite(fd, buffer1, 3);
+    llwrite(fd, buffer2, 2);
+    llwrite(fd, buffer3, 5);
 
     if (llclose(fd) != 0) {
         printf("Error closing serial port\n");
