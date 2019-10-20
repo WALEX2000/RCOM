@@ -28,8 +28,13 @@ int main(int argc, char **argv)
     unsigned char buffer3[] = "aaaaa";
 
     llwrite(fd, buffer1, 3);
-    llwrite(fd, buffer2, 2);
+    printf("Sending %s \n", buffer1);
+
+    llwrite(fd, buffer2, 2);    
+    printf("Sending %s \n", buffer2);
+
     llwrite(fd, buffer3, 5);
+    printf("Sending %s \n", buffer3);
 
     if (llclose(fd) != 0) {
         printf("Error closing serial port\n");

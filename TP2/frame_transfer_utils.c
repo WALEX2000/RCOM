@@ -85,6 +85,9 @@ void write_frame(int fd, frame_content content) {
           bcc2 = bcc2 ^ bytes[i];
         }
 
+        if (bcc2 == FLAG || bcc2 == ESC_BYTE) // stuffing ao bcc2
+          message_size++;
+
         unsigned char* message = malloc(message_size);
         message[0] = flag;
         message[1] = a;
@@ -92,7 +95,7 @@ void write_frame(int fd, frame_content content) {
         message[3] = bcc;
 
         for (int i = 0, msgIndex = 4; i < numbytes; i++, msgIndex++) {
-          if (bytes[i] == FLAG || bytes[i] == ESC_BYTE) {
+          if (bytes[i] == FLAG || bytes[i] == ESC_BYTE) { // stuffing
             message[msgIndex] = ESC_BYTE;
             message[msgIndex + 1] = bytes[i] ^ ESC_MASK;
             msgIndex++;
@@ -100,7 +103,12 @@ void write_frame(int fd, frame_content content) {
           else message[msgIndex] = bytes[i];
         }
 
-        message[message_size - 2] = bcc2;
+        if (bcc2 == FLAG || bcc2 == ESC_BYTE) { // bcc2 stuffing
+          message[message_size - 3] = ESC_BYTE;
+          message[message_size - 2] = bcc2 ^ ESC_MASK;
+        }
+        else message[message_size - 2] = bcc2;
+        
         message[message_size - 1] = flag;
 
         write(fd, message, message_size);
@@ -173,21 +181,12 @@ static frame_content read_frame_general(int fd, int expected_address, int * expe
                 else state = START_STATE;
                 break; 
             case WAIT_DATA_STATE:
-                if (byte == FLAG) {
-                    if (!verify_bcc(bytes, num_bytes_read)) {
-                      if(num_bytes_read + 1 > bytesArraySize) {
-                        bytesArraySize *= 2;
-                        bytes = realloc(bytes, bytesArraySize);
-                      }
-                      bytes[num_bytes_read] = byte;
-                      num_bytes_read++;
-                      state = WAIT_FLAG_STATE;
-                    }
-                    else state = STOP_STATE; 
-                }
+                if (byte == FLAG) 
+                  state = STOP_STATE;
                 else if (byte == ESC_BYTE)
                     state = WAIT_DATA_ESC_STATE;
                 else {
+                  
                     if(num_bytes_read + 1 > bytesArraySize) {
                       bytesArraySize *= 2;
                       bytes = realloc(bytes, bytesArraySize);
@@ -197,15 +196,8 @@ static frame_content read_frame_general(int fd, int expected_address, int * expe
                 }
                 break;
             case WAIT_DATA_NOBCC_STATE:
-                if (byte == FLAG) {
-                  if(num_bytes_read + 1 > bytesArraySize) {
-                    bytesArraySize *= 2;
-                    bytes = realloc(bytes, bytesArraySize);
-                  }
-                  bytes[num_bytes_read] = byte;
-                  num_bytes_read++;
-                  state = WAIT_FLAG_STATE;
-                }
+                if (byte == FLAG)
+                  return content;
                 else if (byte == ESC_BYTE)
                     state = WAIT_DATA_ESC_STATE;
                 else {
@@ -220,7 +212,7 @@ static frame_content read_frame_general(int fd, int expected_address, int * expe
                 break;
             case WAIT_DATA_ESC_STATE:
                 if (byte == (ESC_MASK ^ FLAG) || byte == (ESC_MASK ^ ESC_BYTE))
-                    state = WAIT_DATA_NOBCC_STATE;
+                    state = WAIT_DATA_STATE;
                 else return content;
                 if(num_bytes_read + 1 > bytesArraySize) {
                   bytesArraySize *= 2;
@@ -229,11 +221,6 @@ static frame_content read_frame_general(int fd, int expected_address, int * expe
                 bytes[num_bytes_read] = byte ^ ESC_MASK;
                 num_bytes_read++;
                 break;
-            case WAIT_FLAG_STATE:
-                if (byte == FLAG && verify_bcc(bytes, num_bytes_read))
-                  state = STOP_STATE;
-                else return content;
-                break;     
             case BCC_OK_STATE:
               if (byte == FLAG)
                 return content;

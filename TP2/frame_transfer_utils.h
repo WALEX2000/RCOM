@@ -39,7 +39,6 @@
 #define WAIT_DATA_STATE 6
 #define WAIT_DATA_NOBCC_STATE 7
 #define WAIT_DATA_ESC_STATE 8
-#define WAIT_FLAG_STATE 9
 
 #define ESC_BYTE 0x7d
 #define ESC_MASK 0x20
