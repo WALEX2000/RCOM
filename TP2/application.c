@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "data-link.h"
 #include "application.h"
@@ -104,14 +105,27 @@ int sendControlPacket(int fd, ControlPacketType type, char* fileName, int fileSi
 
 int sendFileData(int fd, FILE* file, int fileSize) {
     const int nPackets = 10;
-    const int nBytesPerPacket = fileSize/nPackets;
+    const int nBytesPerPacket = ceil(fileSize/nPackets);
+    char* data = malloc(fileSize);
+    fread(data, fileSize, 1, file);
     for(unsigned int i = 0; i < nPackets; i++) {
-        unsigned char* dataPacket = malloc(5);
+        int realSize = nBytesPerPacket;
+        if(i == nPackets-1) //in case the last packet has less bytes to send than the other ones
+            realSize = fileSize - nBytesPerPacket*i;
 
-        dataPacket[0] = DATA;
-        dataPacket[0] = i;
-        //enviar o numero de Tetos
-        //enviar os tetos
+        unsigned char* dataPacket = malloc(4 + realSize);
+
+        dataPacket[0] = DATA; //control field
+        dataPacket[1] = i; //serial number
+        dataPacket[2] = realSize & 0xff; //size of packet data
+        dataPacket[3] = (realSize & 0xff00) >> 8; //size of packet data
+        memcpy(dataPacket + 4, data + i*nBytesPerPacket, realSize); //packet data
+
+        int written = llwrite(fd, dataPacket, realSize);
+        if(written != realSize) {
+            printf("ERROR: Couldn't write everything in dataPacket\n");
+            return 1;
+        }
     }
     return 0;
 }
