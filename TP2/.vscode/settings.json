@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "protocol_interface.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "data-link.h": "c"
     }
 }
