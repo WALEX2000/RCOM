@@ -18,6 +18,7 @@
 #define TRANSMITTER 0
 #define RECEIVER 1
 
+#define COM0 0
 #define COM1 1
 #define COM2 2
 #define COM3 3

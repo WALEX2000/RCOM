@@ -22,32 +22,38 @@ int main(int argc, char*argv[]) {
         exit(1);
     }
 
-    int fd = 1;//llopen(com, type);
+    int fd = llopen(com, type);
     if (fd == -1) {
         printf("Error opening serial port\n");
         exit(1);
     }
 
-    if(type == TRANSMITTER) sendFile(fd, filepath);
+    if(type == TRANSMITTER) {
+        if(sendFile(fd, filepath) != 0) printf("Error sending file!");
+    }
     else receiveFile(fd, filepath);
-
-    /*if (llclose(fd) != 0) {
+    
+    if (llclose(fd) != 0) {
         printf("Error closing serial port\n");
         exit(1);
-    }*/
+    }
 
     return 0;
 }
 
 int sendFile(int fd, char* inputFileName) {
     FILE* file = fopen(inputFileName, "r");
-    //if(file == NULL) return 1;
-
-    //fseek(file, 0L, SEEK_END);
-    int fileSize = 273;//ftell(file);
-    //rewind(file);
-
+    if(file == NULL) {
+        printf("Couldn't find file: %s\n", inputFileName);
+        return 1;
+    }
+    
+    fseek(file, 0L, SEEK_END);
+    int fileSize = ftell(file);
+    rewind(file);
+    
     sendControlPacket(fd, CONTROL_START, inputFileName, fileSize);
+    sendFileData(fd, file);
 
     return 0;
 }
@@ -58,21 +64,20 @@ int sendControlPacket(int fd, ControlPacketType type, char* fileName, int fileSi
     int fileSizeBufferSize = 0;
     int temp = fileSize;
     do {
-        printf("%d\n", temp);
         fileSizeBufferSize++;
         temp /= 256;
     } while (temp > 0);
 
-    int* controlPacket = malloc(5 + fileNameSize + fileSizeBufferSize);
+    unsigned char* controlPacket = malloc(5 + fileNameSize + fileSizeBufferSize);
 
     controlPacket[0] = CONTROL_START;
     controlPacket[1] = FILE_SIZE;
     controlPacket[2] = fileSizeBufferSize;
 
-    char* fileSizeString = malloc(fileSizeBufferSize);
-    sprintf(fileSizeString, "%x", fileSize);
     for(int i = 0; i < fileSizeBufferSize; i++) {
-        controlPacket[i+3] = fileSizeString[i];
+        uint8_t byte = fileSize & 0xff;
+        fileSize = fileSize >> 8;
+        controlPacket[i+3] = byte;
     }
 
     controlPacket[fileSizeBufferSize+3] = FILE_NAME;
@@ -86,9 +91,23 @@ int sendControlPacket(int fd, ControlPacketType type, char* fileName, int fileSi
         printf("%d: %X\n", i, controlPacket[i]);
     }
 
+    int written = llwrite(fd, controlPacket, sizeof(controlPacket));
+    if(written != sizeof(controlPacket)) return 1;
+
+    return 0;
+}
+
+int sendFileData(int fd, FILE* file) {
+    //TODO tudo
     return 0;
 }
 
 int receiveFile(int fd, char* outputFileName) {
+    unsigned char* readControl = malloc(100);
+    int nRead = llread(fd, readControl);
+
+    for(int i = 0; i < nRead; i++) {
+        printf("%d: %X\n", i, readControl[i]);
+    }
     return 0;
 }

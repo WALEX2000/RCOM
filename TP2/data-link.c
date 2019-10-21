@@ -16,15 +16,18 @@ static struct global_vars globals;
 int llopen(int port, int type) {
     struct termios oldtio, newtio;
 
-    char path[11] = "/dev/pts/?";
+    const int pathLen = 12;
+    char path[pathLen] = "/dev/ttys00?";
+    //char path[pathLen] = "/dev/pts/?";
     switch (port) {
-        case COM1: path[9] = '0'; break;
-        case COM2: path[9] = '1'; break;
-        case COM3: path[9] = '2'; break;
-        case COM4: path[9] = '3'; break;    
+        case COM0: path[pathLen-1] = '0'; break;
+        case COM1: path[pathLen-1] = '1'; break;
+        case COM2: path[pathLen-1] = '2'; break;
+        case COM3: path[pathLen-1] = '3'; break;
+        case COM4: path[pathLen-1] = '4'; break;    
         default: printf("Unknown port: %d\n", port); return -1;
     }
-
+    //printf("PATH: %s\n", path);
 
     /*
         Open serial port device for reading and writing and not as controlling tty
