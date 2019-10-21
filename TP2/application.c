@@ -102,7 +102,10 @@ int sendControlPacket(int fd, ControlPacketType type, char* fileName, int fileSi
 }
 
 int sendFileData(int fd, FILE* file) {
-    //TODO tudo
+    //enviar campo de controlo 1
+    //enviar numero de sequência
+    //enviar o numero de Tetos
+    //enviar os tetos
     return 0;
 }
 
