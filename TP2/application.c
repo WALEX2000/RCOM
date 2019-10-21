@@ -54,11 +54,19 @@ int sendFile(int fd, char* inputFileName) {
     rewind(file);
     
     if(sendControlPacket(fd, CONTROL_START, inputFileName, fileSize) != 0) {
-        printf("Error sending Control Packet\n");
+        printf("Error sending Start Control Packet\n");
         return 1;
     }
 
-    sendFileData(fd, file, fileSize);
+    if(sendFileData(fd, file, fileSize) != 0) {
+        printf("Error sending Data Packet\n");
+        return 1;
+    }
+
+    if(sendControlPacket(fd, CONTROL_END, inputFileName, fileSize) != 0) {
+        printf("Error sending End Control Packet\n");
+        return 1;
+    }
 
     return 0;
 }
@@ -121,8 +129,12 @@ int sendFileData(int fd, FILE* file, int fileSize) {
         dataPacket[3] = (realSize & 0xff00) >> 8; //size of packet data
         memcpy(dataPacket + 4, data + i*nBytesPerPacket, realSize); //packet data
 
-        int written = llwrite(fd, dataPacket, realSize);
-        if(written != realSize) {
+        printf("DATA Packet %d:\n", i);
+        for(unsigned int j = 0; j < (4 + realSize); j++) {
+            printf("%d: %x\n", j, dataPacket[j]);
+        }
+        int written = llwrite(fd, dataPacket, (4 + realSize));
+        if(written != (4 +realSize)) {
             printf("ERROR: Couldn't write everything in dataPacket\n");
             return 1;
         }
@@ -130,12 +142,61 @@ int sendFileData(int fd, FILE* file, int fileSize) {
     return 0;
 }
 
+int assignControlTypeValue(int type, int length, char* value, struct controlPacket *control) {
+    int size = 0;
+    
+    switch (type)
+    {
+    case FILE_SIZE:
+        for(unsigned int i = 0; i < length; i++) {
+            size = value[i] << 8*i;
+        }
+        control->file_size = size;
+        break;
+
+    case FILE_NAME:
+        control->file_name = (char*) malloc(length);
+        memcpy(control->file_name, value, length);
+        break;
+    
+    default:
+        printf("ERROR: Unknown type in Control Packet: %d", type);
+        return 1;
+        break;
+    }
+
+    return 0;
+}
+
+struct controlPacket parseControlPacket(unsigned char* packet, int packetSize) {
+    struct controlPacket control;
+    control.control_field = packet[0];
+
+    unsigned int i = 1;
+    while(i < packetSize) {
+        int type = packet[i];
+        int length = packet[i+1];
+        char* value = (char*) malloc(length);
+        memcpy(value, packet + i + 2, length);
+        assignControlTypeValue(type, length, value, &control);
+        i += length + 2;
+    }
+
+    return control;
+}
+
 int receiveFile(int fd, char* outputFileName) {
     unsigned char* readControl = malloc(100);
     int nRead = llread(fd, readControl);
 
-    for(int i = 0; i < nRead; i++) {
-        printf("%d: %X\n", i, readControl[i]);
+    struct controlPacket controlStart = parseControlPacket(readControl, nRead);
+    printf("TYPE: %d, FILE SIZE: %d, FILE NAME: %s\n", controlStart.control_field, controlStart.file_size, controlStart.file_name);
+
+    unsigned char* file = malloc(10000);
+    int readMore = llread(fd, file);
+
+    for(int i = 0; i < readMore; i++) {
+        //printf("%d: %X\n", i, file[i]);
     }
     return 0;
 }

@@ -15,5 +15,11 @@ typedef enum {
     FILE_NAME
 } ControlPacketAttributeType;
 
+struct controlPacket{
+    int control_field;
+    char* file_name;
+    int file_size;
+};
+
 int sendControlPacket(int fd, ControlPacketType type, char* fileName, int fileSize);
 int sendFileData(int fd, FILE* file, int fileSize);
