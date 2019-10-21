@@ -2,7 +2,6 @@
 #include "frame_transfer_utils.h"
 
 static bool alarm_rang = false;
-static int alarm_num = 1;
 static int curr_fd_read;
 
 static bool byteIsInArray(unsigned char byte, int * array, int arraySize) {
@@ -26,9 +25,8 @@ static int fd_set_blocking(int fd, bool blocking) {
 }
 
 void alarm_handler() {                // atende alarme
-    printf("alarme # %d\n", alarm_num);
+    printf("alarme tocou!\n");
     alarm_rang = true;
-    alarm_num++;
     fd_set_blocking(curr_fd_read, false);   
 }
 
@@ -41,7 +39,6 @@ void setup_timeout(int fd, int timeout_s) {
 
 void disable_timeout() {
     alarm(0);
-    alarm_num = 1;
 }
 
 
