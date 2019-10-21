@@ -57,7 +57,7 @@ int sendFile(int fd, char* inputFileName) {
         return 1;
     }
 
-    sendFileData(fd, file);
+    sendFileData(fd, file, fileSize);
 
     return 0;
 }
@@ -95,17 +95,23 @@ int sendControlPacket(int fd, ControlPacketType type, char* fileName, int fileSi
         printf("%d: %X\n", i, controlPacket[i]);
     }
 
-    int written = llwrite(fd, controlPacket, sizeof(controlPacket));
+    int written = llwrite(fd, controlPacket, 5 + fileNameSize + fileSizeBufferSize);
     if(written != sizeof(controlPacket)) return 1;
 
     return 0;
 }
 
-int sendFileData(int fd, FILE* file) {
-    //enviar campo de controlo 1
-    //enviar numero de sequência
-    //enviar o numero de Tetos
-    //enviar os tetos
+int sendFileData(int fd, FILE* file, int fileSize) {
+    const int nPackets = 10;
+    const int nBytesPerPacket = fileSize/nPackets;
+    for(unsigned int i = 0; i < nPackets; i++) {
+        unsigned char* dataPacket = malloc(5);
+
+        dataPacket[0] = DATA;
+        dataPacket[0] = i;
+        //enviar o numero de Tetos
+        //enviar os tetos
+    }
     return 0;
 }
 
