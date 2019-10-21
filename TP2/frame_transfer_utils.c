@@ -78,6 +78,11 @@ void write_frame(int fd, frame_content content) {
         unsigned char * bytes = content.bytes;
         int numbytes = content.length;
 
+        /*printf("BEFORE STUFFING\n");
+        for(int i = 0; i < numbytes; i++) {
+          printf("message[%d]: %x\n", i, bytes[i]);
+        }*/
+
         int message_size = 6 + numbytes;
         for (int i = 0; i < numbytes; i++) {
           if (bytes[i] == FLAG || bytes[i] == ESC_BYTE)
@@ -113,8 +118,9 @@ void write_frame(int fd, frame_content content) {
 
         write(fd, message, message_size);
 
-        /*for (int i = 0; i < message_size; i++) {
-          printf("message[%d] = %x\n", i, message[i]);
+        /*printf("AFTER STUFFING\n");
+        for (int i = 4; i < message_size - 2; i++) {
+          printf("message[%d] = %x\n", i-4, message[i]);
         }*/
 
         free(message);

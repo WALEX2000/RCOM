@@ -72,14 +72,15 @@ int sendControlPacket(int fd, ControlPacketType type, char* fileName, int fileSi
         temp /= 256;
     } while (temp > 0);
 
-    unsigned char* controlPacket = malloc(5 + fileNameSize + fileSizeBufferSize);
+    int controlPacketSize = 5 + fileNameSize + fileSizeBufferSize;
+    unsigned char* controlPacket = malloc(controlPacketSize);
 
     controlPacket[0] = CONTROL_START;
     controlPacket[1] = FILE_SIZE;
     controlPacket[2] = fileSizeBufferSize;
 
     for(int i = 0; i < fileSizeBufferSize; i++) {
-        uint8_t byte = fileSize & 0xff;
+        unsigned char byte = fileSize & 0xff;
         fileSize = fileSize >> 8;
         controlPacket[i+3] = byte;
     }
@@ -95,8 +96,8 @@ int sendControlPacket(int fd, ControlPacketType type, char* fileName, int fileSi
         printf("%d: %X\n", i, controlPacket[i]);
     }
 
-    int written = llwrite(fd, controlPacket, 5 + fileNameSize + fileSizeBufferSize);
-    if(written != sizeof(controlPacket)) return 1;
+    int written = llwrite(fd, controlPacket, controlPacketSize);
+    if(written != controlPacketSize) return 1;
 
     return 0;
 }
