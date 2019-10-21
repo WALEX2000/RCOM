@@ -16,8 +16,8 @@ int main(int argc, char*argv[]) {
     int type = 0;
     char* filepath = argv[3];
 
-    if(strcmp(typeStr, "sender") == 0) type = TRANSMITTER;
-    else if (strcmp(typeStr, "receiver") == 0) type = RECEIVER;
+    if(strcasecmp(typeStr, "sender") == 0) type = TRANSMITTER;
+    else if (strcasecmp(typeStr, "receiver") == 0) type = RECEIVER;
     else {
         printf("%s is not a valid type\n", typeStr);
         exit(1);
