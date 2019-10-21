@@ -112,7 +112,7 @@ int sendControlPacket(int fd, ControlPacketType type, char* fileName, int fileSi
 }
 
 int sendFileData(int fd, FILE* file, int fileSize) {
-    const int nPackets = 10;
+    const int nPackets = 20;
     const int nBytesPerPacket = ceil(fileSize/nPackets);
     char* data = malloc(fileSize);
     fread(data, fileSize, 1, file);
@@ -186,17 +186,22 @@ struct controlPacket parseControlPacket(unsigned char* packet, int packetSize) {
 }
 
 int receiveFile(int fd, char* outputFileName) {
-    unsigned char* readControl = malloc(100);
-    int nRead = llread(fd, readControl);
+    unsigned char* readControlPacket = malloc(100);
+    int controlPacketSize = llread(fd, readControlPacket);
 
-    struct controlPacket controlStart = parseControlPacket(readControl, nRead);
-    printf("TYPE: %d, FILE SIZE: %d, FILE NAME: %s\n", controlStart.control_field, controlStart.file_size, controlStart.file_name);
+    struct controlPacket controlStart = parseControlPacket(readControlPacket, controlPacketSize);
 
+    //TODO read file data
     unsigned char* file = malloc(10000);
-    int readMore = llread(fd, file);
-
-    for(int i = 0; i < readMore; i++) {
-        //printf("%d: %X\n", i, file[i]);
+    int nRead = llread(fd, file);
+    for(int i = 0; i < nRead; i++) {
+        printf("%d: %X\n", i, file[i]);
     }
+
+    /* Uncoment in the end to read last control packet
+    unsigned char* endControlPacket = malloc(100);
+    int endControlPacketSize = llread(fd, readControlPacket);
+    struct controlPacket controlEnd = parseControlPacket(endControlPacket, endControlPacketSize);
+    */
     return 0;
 }
