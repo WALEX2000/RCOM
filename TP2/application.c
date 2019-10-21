@@ -52,7 +52,11 @@ int sendFile(int fd, char* inputFileName) {
     int fileSize = ftell(file);
     rewind(file);
     
-    sendControlPacket(fd, CONTROL_START, inputFileName, fileSize);
+    if(sendControlPacket(fd, CONTROL_START, inputFileName, fileSize) != 0) {
+        printf("Error sending Control Packet\n");
+        return 1;
+    }
+
     sendFileData(fd, file);
 
     return 0;
