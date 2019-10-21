@@ -6,7 +6,7 @@
 
 int main(int argc, char*argv[]) {
     if (argc < 3) {
-      printf("Usage:\tserialcom COM type filepath");
+      printf("Usage:\tserialcom COM type filepath\n");
       exit(1);
     }
 
@@ -29,7 +29,7 @@ int main(int argc, char*argv[]) {
     }
 
     if(type == TRANSMITTER) {
-        if(sendFile(fd, filepath) != 0) printf("Error sending file!");
+        if(sendFile(fd, filepath) != 0) printf("Error sending file!\n");
     }
     else receiveFile(fd, filepath);
     
