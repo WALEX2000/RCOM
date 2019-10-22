@@ -185,8 +185,21 @@ int llread(int fd, unsigned char * buffer) {
             else if (frame.c_field == I_1) nack = REJ_1;
             write_control_frame(fd, A_SENDER, nack);
             continue;
-        }
-        else { // if ACK
+        } else if (frame.c_field == I_0 || frame.c_field == I_1) {
+            if(!verify_bcc(frame.bytes, frame.length)) {
+                printf("Bad bad bad gonna send nack!\n");
+                int nack;
+                if (frame.c_field == I_0) nack = REJ_0;
+                else if (frame.c_field == I_1) nack = REJ_1;
+                write_control_frame(fd, A_SENDER, nack);
+                continue;
+            } else { // if ACK
+                int ack;
+                if (frame.c_field == I_0) ack = RR_1;
+                else if(frame.c_field == I_1) ack = RR_0;
+                write_control_frame(fd, A_SENDER, ack);
+            }
+        } else { // if ACK
             int ack;
             if (frame.c_field == I_0) ack = RR_1;
             else if(frame.c_field == I_1) ack = RR_0;

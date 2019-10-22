@@ -47,7 +47,7 @@ bool verify_bcc(unsigned char bytes[], int length) {
     for (int i = 0; i < length ; i++)
         bcc2_check = bcc2_check ^ bytes[i];      
 
-    return bcc2_check == 0;
+    return bcc2_check != 0;
 }
 
 frame_content create_frame_content() {

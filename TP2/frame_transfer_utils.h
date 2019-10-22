@@ -58,3 +58,4 @@ void write_frame(int fd, frame_content content);
 frame_content read_frame(int fd, int expected_address, int * expected_cs, int expected_cs_size);
 frame_content read_frame_timeout(int fd, int expected_address, int * expected_cs, int expected_cs_size, int timeout_s);
 bool read_ack_frame(int fd, int timeout_s, bool ns);
+bool verify_bcc(unsigned char bytes[], int length);
