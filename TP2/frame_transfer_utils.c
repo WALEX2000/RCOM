@@ -45,9 +45,11 @@ void disable_timeout() {
 bool verify_bcc(unsigned char bytes[], int length) {
     unsigned char bcc2_check = 0;
     for (int i = 0; i < length ; i++)
-        bcc2_check = bcc2_check ^ bytes[i];      
+        bcc2_check = bcc2_check ^ bytes[i];   
 
-    return bcc2_check != 0;
+    printf("BCC2 read:%x\n", bytes[length-1]);   
+
+    return bcc2_check == 0;
 }
 
 frame_content create_frame_content() {
@@ -110,7 +112,7 @@ void write_frame(int fd, frame_content content) {
           message[message_size - 2] = bcc2 ^ ESC_MASK;
         }
         else message[message_size - 2] = bcc2;
-        
+        printf("BCC2 written: %x\n", bcc2);
         message[message_size - 1] = flag;
 
         write(fd, message, message_size);
@@ -242,8 +244,11 @@ static frame_content read_frame_general(int fd, int expected_address, int * expe
       return content;
     }
 
+    if(!verify_bcc(bytes, num_bytes_read))
+      return content;
+
     content.bytes = bytes;
-    content.length = num_bytes_read - 1;
+    content.length = num_bytes_read-1;
 
     return content;
 }
