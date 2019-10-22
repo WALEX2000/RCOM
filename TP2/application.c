@@ -50,7 +50,7 @@ int sendFile(int fd, char* inputFileName) {
     }
     
     fseek(file, 0L, SEEK_END);
-    int fileSize = ftell(file);
+    long int fileSize = ftell(file);
     rewind(file);
     
     if(sendControlPacket(fd, CONTROL_START, inputFileName, fileSize) != 0) {
@@ -71,7 +71,7 @@ int sendFile(int fd, char* inputFileName) {
     return 0;
 }
 
-int sendControlPacket(int fd, ControlPacketType type, char* fileName, int fileSize) {
+int sendControlPacket(int fd, ControlPacketType type, char* fileName, long int fileSize) {
     int fileNameSize = strlen(fileName);
 
     int fileSizeBufferSize = 0;
@@ -110,45 +110,41 @@ int sendControlPacket(int fd, ControlPacketType type, char* fileName, int fileSi
     return 0;
 }
 
-int sendFileData(int fd, FILE* file, int fileSize) {
-    const int nPackets = 20;
-    const int nBytesPerPacket = ceil(fileSize/nPackets);
+int sendFileData(int fd, FILE* file, long int fileSize) {
+    const int nPackets = (fileSize/(MAX_DATA_PACKET_SIZE-4))+1;
     char* data = malloc(fileSize);
     fread(data, fileSize, 1, file);
     for(unsigned int i = 0; i < nPackets; i++) {
-        int realSize = nBytesPerPacket;
-        if(i == nPackets-1) //in case the last packet has less bytes to send than the other ones
-            realSize = fileSize - nBytesPerPacket*i;
+        int realSize = MAX_DATA_PACKET_SIZE;
+        if(i == (nPackets-1)) //in case the last packet has less bytes to send than the other ones
+            realSize = fileSize - (MAX_DATA_PACKET_SIZE-4)*i + 4;
 
-        unsigned char* dataPacket = malloc(4 + realSize);
+        unsigned char* dataPacket = malloc(realSize);
 
         dataPacket[0] = DATA; //control field
         dataPacket[1] = i; //serial number
         dataPacket[2] = (realSize & 0xff00) >> 8; //size of packet data
         dataPacket[3] = realSize & 0xff; //size of packet data
-        memcpy(dataPacket + 4, data + i*nBytesPerPacket, realSize); //packet data
+        memcpy(dataPacket + 4, data + i*(MAX_DATA_PACKET_SIZE-4), realSize-4); //packet data
 
         //Send dataPacket Data
-        int writtenData = llwrite(fd, dataPacket, realSize + 4);
-        if(writtenData != realSize + 4) {
+        int writtenData = llwrite(fd, dataPacket, realSize);
+        if(writtenData != realSize) {
             printf("ERROR: Couldn't write everything in dataPacket\n");
             return 1;
         }
-
-        printf("DATA Packet %d:\n", i);
-        printf("SIZE: %d\n", writtenData);
     }
     return 0;
 }
 
-int assignControlTypeValue(int type, int length, char* value, struct controlPacket* control) {
+int assignControlTypeValue(int type, int length, unsigned char* value, struct controlPacket* control) {
     long int size = 0;
     
     switch (type)
     {
     case FILE_SIZE:
         for(unsigned int i = 0; i < length; i++) {
-            size += value[i] << 8*i;
+            size += (value[i] & 0xff) << 8*i;
         }
         control->file_size = size;
         break;
@@ -222,7 +218,7 @@ int receiveFile(int fd, char* saveFolderPath) {
     struct controlPacket controlStart = parseControlPacket(readControlPacket, controlPacketSize);
     displayControlPacket(controlStart);
 
-    int bytesRead = 0;
+    long int bytesRead = 0;
     unsigned char* finalFileData = (unsigned char*) malloc(controlStart.file_size);
     while(bytesRead < controlStart.file_size) {
 
@@ -232,6 +228,8 @@ int receiveFile(int fd, char* saveFolderPath) {
         struct dataHead* header = parseDataHead(packet);
         if(header == NULL) {
             printf("ERROR reading data header, type is not data.\n");
+            printf("bytesRead: %d\n", bytesRead);
+            printf("file size: %u\n", controlStart.file_size);
             return 1;
         }
         //printf("SN: %d\nPacket Size: %d\n", header->serialNumber, header->packet_size);
@@ -261,7 +259,7 @@ int receiveFile(int fd, char* saveFolderPath) {
 
     if(newFile == NULL)
     {
-        printf("Unable to create file.\n");
+        printf("Unable to create file: %s\n", newFileName);
         exit(1);
     }
 

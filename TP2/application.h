@@ -28,7 +28,8 @@ struct dataHead{
     int packet_size;
 };
 
-int sendControlPacket(int fd, ControlPacketType type, char* fileName, int fileSize);
-int sendFileData(int fd, FILE* file, int fileSize);
+int sendControlPacket(int fd, ControlPacketType type, char* fileName, long int fileSize);
+int sendFileData(int fd, FILE* file, long int fileSize);
 struct controlPacket parseControlPacket(unsigned char* packet, int packetSize);
 void displayControlPacket(struct controlPacket packet);
+int assignControlTypeValue(int type, int length, unsigned char* value, struct controlPacket* control);
