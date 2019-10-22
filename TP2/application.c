@@ -84,7 +84,7 @@ int sendControlPacket(int fd, ControlPacketType type, char* fileName, int fileSi
     int controlPacketSize = 5 + fileNameSize + fileSizeBufferSize;
     unsigned char* controlPacket = malloc(controlPacketSize);
 
-    controlPacket[0] = CONTROL_START;
+    controlPacket[0] = type;
     controlPacket[1] = FILE_SIZE;
     controlPacket[2] = fileSizeBufferSize;
 
@@ -101,9 +101,8 @@ int sendControlPacket(int fd, ControlPacketType type, char* fileName, int fileSi
         controlPacket[fileSizeBufferSize+5+i] = fileName[i];
     }
 
-    for(int i = 0; i < 5 + fileNameSize + fileSizeBufferSize; i++) {
-        printf("%d: %X\n", i, controlPacket[i]);
-    }
+    struct controlPacket paqueta = parseControlPacket(controlPacket, controlPacketSize);
+    displayControlPacket(paqueta);
 
     int written = llwrite(fd, controlPacket, controlPacketSize);
     if(written != controlPacketSize) return 1;
@@ -129,12 +128,6 @@ int sendFileData(int fd, FILE* file, int fileSize) {
         dataPacket[3] = realSize & 0xff; //size of packet data
         memcpy(dataPacket + 4, data + i*nBytesPerPacket, realSize); //packet data
 
-        printf("DATA Packet %d:\n", i);
-        for(unsigned int j = 0; j < 4; j++) {
-            printf("%d: %x\n", j, dataPacket[j]);
-        }
-        printf("SIZE: %d\n", realSize);
-
         //Send dataPacket Head
         int writtenHead = llwrite(fd, dataPacket, 4);
         if(writtenHead != 4) {
@@ -148,6 +141,9 @@ int sendFileData(int fd, FILE* file, int fileSize) {
             printf("ERROR: Couldn't write everything in dataPacket\n");
             return 1;
         }
+
+        printf("DATA Packet %d:\n", i);
+        printf("SIZE: %d\n", writtenData);
     }
     return 0;
 }
@@ -204,14 +200,37 @@ struct dataHead* parseDataHead(unsigned char* head) {
     return header;
 }
 
+void displayControlPacket(struct controlPacket packet) {
+    switch (packet.control_field)
+    {
+    case CONTROL_START:
+        printf("Control Field: START\n");
+        break;
+    case DATA:
+        printf("Control Field: DATA\n");
+        break;
+    case CONTROL_END:
+        printf("Control Field: END\n");
+        break;
+    
+    default:
+        printf("Control Field: UNKNOWN (%d)\n", packet.control_field);
+        break;
+    }
+
+    printf("File name: %s\n", packet.file_name);
+    printf("File size: %d\n", packet.file_size);
+}
+
 int receiveFile(int fd, char* outputFileName) {
     unsigned char* readControlPacket = malloc(100);
     int controlPacketSize = llread(fd, readControlPacket);
 
     struct controlPacket controlStart = parseControlPacket(readControlPacket, controlPacketSize);
+    displayControlPacket(controlStart);
+
     int fileRead = 0;
-    unsigned char* finalFile = (unsigned char*) malloc(controlStart.file_size);
-    
+    unsigned char* finalFileData = (unsigned char*) malloc(controlStart.file_size);
     while(fileRead < controlStart.file_size) {
         //Read header
         unsigned char* head = malloc(4);
@@ -230,20 +249,38 @@ int receiveFile(int fd, char* outputFileName) {
         //Read data
         unsigned char* file = malloc(header->packet_size);
         int nRead = llread(fd, file);
-        memcpy(finalFile + fileRead, file, nRead);
+        memcpy(finalFileData + fileRead, file, nRead);
 
-        printf("DATA PACKET nº %d\n", header->serialNumber);
-        for(int i = 0; i < nRead; i++) {
+        printf("DATA Packet: %d\n", header->serialNumber);
+        printf("Read: %d\n", nRead);
+        /*for(int i = 0; i < nRead; i++) {
             printf("%d: %X\n", i, file[i]);
-        }
+        }*/
         fileRead += nRead;
     }
     printf("EXITED READ FILE LOOP\n");
-
    
     unsigned char* endControlPacket = malloc(100);
-    int endControlPacketSize = llread(fd, readControlPacket);
+    int endControlPacketSize = llread(fd, endControlPacket);
     struct controlPacket controlEnd = parseControlPacket(endControlPacket, endControlPacketSize);
+
+    displayControlPacket(controlEnd);
+    //check that control end is the same as control Start to be sure there were no errors
+
+    //save file into a new gif
+    char newFileName[100];
+    sprintf(newFileName, "imagesRecieved/%s", controlEnd.file_name);
+    FILE* newFile = fopen(newFileName, "w");
+
+    if(newFile == NULL)
+    {
+        printf("Unable to create file.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    fwrite(finalFileData, sizeof(char), controlEnd.file_size, newFile);
+    fclose(newFile);
+
 
     return 0;
 }
