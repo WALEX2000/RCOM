@@ -183,7 +183,7 @@ int llread(int fd, unsigned char * buffer) {
             int nack;
             if (frame.c_field == I_0) nack = REJ_0;
             else if (frame.c_field == I_1) nack = REJ_1;
-            write_control_frame(fd, A_SENDER, nack);
+            write_control_frame(fd, A_SENDER, nack);       
             continue;
         } else { // if ACK
             int ack;
@@ -191,7 +191,7 @@ int llread(int fd, unsigned char * buffer) {
             else if(frame.c_field == I_1) ack = RR_0;
             write_control_frame(fd, A_SENDER, ack);
         }
-    } while(frame.c_field >> 6 != nr); // verifica o bit Nr para saber se ja recebeu
+    } while(frame.c_field >> 6 != nr || frame.bytes == NULL); // verifica o bit Nr para saber se ja recebeu
 
     nr = !nr;
 
