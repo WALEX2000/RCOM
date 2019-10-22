@@ -128,16 +128,9 @@ int sendFileData(int fd, FILE* file, int fileSize) {
         dataPacket[3] = realSize & 0xff; //size of packet data
         memcpy(dataPacket + 4, data + i*nBytesPerPacket, realSize); //packet data
 
-        //Send dataPacket Head
-        int writtenHead = llwrite(fd, dataPacket, 4);
-        if(writtenHead != 4) {
-            printf("ERROR: Couldn't write head of dataPacket\n");
-            return 1;
-        }
-        
         //Send dataPacket Data
-        int writtenData = llwrite(fd, dataPacket + 4, realSize);
-        if(writtenData != realSize) {
+        int writtenData = llwrite(fd, dataPacket, realSize + 4);
+        if(writtenData != realSize + 4) {
             printf("ERROR: Couldn't write everything in dataPacket\n");
             return 1;
         }
@@ -149,13 +142,13 @@ int sendFileData(int fd, FILE* file, int fileSize) {
 }
 
 int assignControlTypeValue(int type, int length, char* value, struct controlPacket* control) {
-    int size = 0;
+    long int size = 0;
     
     switch (type)
     {
     case FILE_SIZE:
         for(unsigned int i = 0; i < length; i++) {
-            size = value[i] << 8*i;
+            size += value[i] << 8*i;
         }
         control->file_size = size;
         break;
@@ -222,60 +215,54 @@ void displayControlPacket(struct controlPacket packet) {
     printf("File size: %d\n", packet.file_size);
 }
 
-int receiveFile(int fd, char* outputFileName) {
+int receiveFile(int fd, char* saveFolderPath) {
     unsigned char* readControlPacket = malloc(100);
     int controlPacketSize = llread(fd, readControlPacket);
 
     struct controlPacket controlStart = parseControlPacket(readControlPacket, controlPacketSize);
     displayControlPacket(controlStart);
 
-    int fileRead = 0;
+    int bytesRead = 0;
     unsigned char* finalFileData = (unsigned char*) malloc(controlStart.file_size);
-    while(fileRead < controlStart.file_size) {
-        //Read header
-        unsigned char* head = malloc(4);
-        int headLength = llread(fd, head);
-        if(headLength != 4) {
-            printf("Couldn't read entire Head of data Packet! Only %d bytes read\n", headLength);
-            return 1;
-        }
-        struct dataHead* header = parseDataHead(head);
+    while(bytesRead < controlStart.file_size) {
+
+        //Read data
+        unsigned char* packet = malloc(MAX_DATA_PACKET_SIZE);
+        int nRead = llread(fd, packet);
+        struct dataHead* header = parseDataHead(packet);
         if(header == NULL) {
             printf("ERROR reading data header, type is not data.\n");
             return 1;
         }
         //printf("SN: %d\nPacket Size: %d\n", header->serialNumber, header->packet_size);
 
-        //Read data
-        unsigned char* file = malloc(header->packet_size);
-        int nRead = llread(fd, file);
-        memcpy(finalFileData + fileRead, file, nRead);
+        memcpy(finalFileData + bytesRead, packet + 4, nRead - 4);
 
         printf("DATA Packet: %d\n", header->serialNumber);
         printf("Read: %d\n", nRead);
         /*for(int i = 0; i < nRead; i++) {
             printf("%d: %X\n", i, file[i]);
         }*/
-        fileRead += nRead;
+        bytesRead += nRead - 4;
     }
-    printf("EXITED READ FILE LOOP\n");
+    //printf("EXITED READ FILE LOOP\n");
    
     unsigned char* endControlPacket = malloc(100);
     int endControlPacketSize = llread(fd, endControlPacket);
-    struct controlPacket controlEnd = parseControlPacket(endControlPacket, endControlPacketSize);
-
+   
+   struct controlPacket controlEnd = parseControlPacket(endControlPacket, endControlPacketSize);
     displayControlPacket(controlEnd);
     //check that control end is the same as control Start to be sure there were no errors
 
     //save file into a new gif
     char newFileName[100];
-    sprintf(newFileName, "imagesRecieved/%s", controlEnd.file_name);
+    sprintf(newFileName, "%s/%s", saveFolderPath, controlEnd.file_name);
     FILE* newFile = fopen(newFileName, "w");
 
     if(newFile == NULL)
     {
         printf("Unable to create file.\n");
-        exit(EXIT_FAILURE);
+        exit(1);
     }
 
     fwrite(finalFileData, sizeof(char), controlEnd.file_size, newFile);

@@ -1,7 +1,9 @@
 #pragma once
 
+#define MAX_DATA_PACKET_SIZE 1024
+
 int sendFile(int fd, char* inputFileName);
-int receiveFile(int fd, char* outputFileName);
+int receiveFile(int fd, char* saveFolderPath);
 
 
 typedef enum {
@@ -18,7 +20,7 @@ typedef enum {
 struct controlPacket{
     int control_field;
     char* file_name;
-    int file_size;
+    long int file_size;
 };
 
 struct dataHead{

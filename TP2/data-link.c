@@ -15,7 +15,9 @@ static struct global_vars globals;
 
 int llopen(int port, int type) {
     struct termios oldtio, newtio;
-
+    
+    //const int pathLen = 10;
+    //char path[] = "/dev/ttyS?";
     const int pathLen = 12;
     char path[] = "/dev/ttys00?";
     //const int pathLen = 10;
