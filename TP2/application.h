@@ -21,5 +21,10 @@ struct controlPacket{
     int file_size;
 };
 
+struct dataHead{
+    int serialNumber;
+    int packet_size;
+};
+
 int sendControlPacket(int fd, ControlPacketType type, char* fileName, int fileSize);
 int sendFileData(int fd, FILE* file, int fileSize);

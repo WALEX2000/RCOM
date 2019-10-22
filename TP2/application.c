@@ -125,16 +125,26 @@ int sendFileData(int fd, FILE* file, int fileSize) {
 
         dataPacket[0] = DATA; //control field
         dataPacket[1] = i; //serial number
-        dataPacket[2] = realSize & 0xff; //size of packet data
-        dataPacket[3] = (realSize & 0xff00) >> 8; //size of packet data
+        dataPacket[2] = (realSize & 0xff00) >> 8; //size of packet data
+        dataPacket[3] = realSize & 0xff; //size of packet data
         memcpy(dataPacket + 4, data + i*nBytesPerPacket, realSize); //packet data
 
         printf("DATA Packet %d:\n", i);
-        for(unsigned int j = 0; j < (4 + realSize); j++) {
+        for(unsigned int j = 0; j < 4; j++) {
             printf("%d: %x\n", j, dataPacket[j]);
         }
-        int written = llwrite(fd, dataPacket, (4 + realSize));
-        if(written != (4 +realSize)) {
+        printf("SIZE: %d\n", realSize);
+
+        //Send dataPacket Head
+        int writtenHead = llwrite(fd, dataPacket, 4);
+        if(writtenHead != 4) {
+            printf("ERROR: Couldn't write head of dataPacket\n");
+            return 1;
+        }
+        
+        //Send dataPacket Data
+        int writtenData = llwrite(fd, dataPacket + 4, realSize);
+        if(writtenData != realSize) {
             printf("ERROR: Couldn't write everything in dataPacket\n");
             return 1;
         }
@@ -142,7 +152,7 @@ int sendFileData(int fd, FILE* file, int fileSize) {
     return 0;
 }
 
-int assignControlTypeValue(int type, int length, char* value, struct controlPacket *control) {
+int assignControlTypeValue(int type, int length, char* value, struct controlPacket* control) {
     int size = 0;
     
     switch (type)
@@ -160,7 +170,7 @@ int assignControlTypeValue(int type, int length, char* value, struct controlPack
         break;
     
     default:
-        printf("ERROR: Unknown type in Control Packet: %d", type);
+        printf("ERROR: Unknown type in Control Packet: %d\n", type);
         return 1;
         break;
     }
@@ -185,23 +195,55 @@ struct controlPacket parseControlPacket(unsigned char* packet, int packetSize) {
     return control;
 }
 
+struct dataHead* parseDataHead(unsigned char* head) {
+    struct dataHead* header = (struct dataHead*) malloc(sizeof(struct dataHead));
+    if(head[0] != DATA) return NULL;
+    header->serialNumber = head[1];
+    header->packet_size = (((head[2] << 8) & 0xff00) | (head[3] & 0xff));
+
+    return header;
+}
+
 int receiveFile(int fd, char* outputFileName) {
     unsigned char* readControlPacket = malloc(100);
     int controlPacketSize = llread(fd, readControlPacket);
 
     struct controlPacket controlStart = parseControlPacket(readControlPacket, controlPacketSize);
+    int fileRead = 0;
+    unsigned char* finalFile = (unsigned char*) malloc(controlStart.file_size);
+    
+    while(fileRead < controlStart.file_size) {
+        //Read header
+        unsigned char* head = malloc(4);
+        int headLength = llread(fd, head);
+        if(headLength != 4) {
+            printf("Couldn't read entire Head of data Packet! Only %d bytes read\n", headLength);
+            return 1;
+        }
+        struct dataHead* header = parseDataHead(head);
+        if(header == NULL) {
+            printf("ERROR reading data header, type is not data.\n");
+            return 1;
+        }
+        //printf("SN: %d\nPacket Size: %d\n", header->serialNumber, header->packet_size);
 
-    //TODO read file data
-    unsigned char* file = malloc(10000);
-    int nRead = llread(fd, file);
-    for(int i = 0; i < nRead; i++) {
-        printf("%d: %X\n", i, file[i]);
+        //Read data
+        unsigned char* file = malloc(header->packet_size);
+        int nRead = llread(fd, file);
+        memcpy(finalFile + fileRead, file, nRead);
+
+        printf("DATA PACKET nº %d\n", header->serialNumber);
+        for(int i = 0; i < nRead; i++) {
+            printf("%d: %X\n", i, file[i]);
+        }
+        fileRead += nRead;
     }
+    printf("EXITED READ FILE LOOP\n");
 
-    /* Uncoment in the end to read last control packet
+   
     unsigned char* endControlPacket = malloc(100);
     int endControlPacketSize = llread(fd, readControlPacket);
     struct controlPacket controlEnd = parseControlPacket(endControlPacket, endControlPacketSize);
-    */
+
     return 0;
 }
