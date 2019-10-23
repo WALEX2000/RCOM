@@ -101,8 +101,10 @@ int sendControlPacket(int fd, ControlPacketType type, char* fileName, long int f
         controlPacket[fileSizeBufferSize+5+i] = fileName[i];
     }
 
-    struct controlPacket paqueta = parseControlPacket(controlPacket, controlPacketSize);
-    displayControlPacket(paqueta);
+
+    //DEBUG
+    //struct controlPacket paqueta = parseControlPacket(controlPacket, controlPacketSize);
+    //displayControlPacket(paqueta);
 
     int written = llwrite(fd, controlPacket, controlPacketSize);
     if(written != controlPacketSize) return 1;
@@ -133,6 +135,8 @@ int sendFileData(int fd, FILE* file, long int fileSize) {
             printf("ERROR: Couldn't write everything in dataPacket\n");
             return 1;
         }
+
+        printf("SENT PACKET %d\n",i);
     }
     return 0;
 }
@@ -171,7 +175,7 @@ struct controlPacket parseControlPacket(unsigned char* packet, int packetSize) {
     while(i < packetSize) {
         int type = packet[i];
         int length = packet[i+1];
-        char* value = (char*) malloc(length);
+        unsigned char* value = (unsigned char*) malloc(length);
         memcpy(value, packet + i + 2, length);
         assignControlTypeValue(type, length, value, &control);
         i += length + 2;
@@ -208,7 +212,7 @@ void displayControlPacket(struct controlPacket packet) {
     }
 
     printf("File name: %s\n", packet.file_name);
-    printf("File size: %d\n", packet.file_size);
+    printf("File size: %lu\n", packet.file_size);
 }
 
 int receiveFile(int fd, char* saveFolderPath) {
@@ -228,8 +232,8 @@ int receiveFile(int fd, char* saveFolderPath) {
         struct dataHead* header = parseDataHead(packet);
         if(header == NULL) {
             printf("ERROR reading data header, type is not data.\n");
-            printf("bytesRead: %d\n", bytesRead);
-            printf("file size: %u\n", controlStart.file_size);
+            printf("bytesRead: %lu\n", bytesRead);
+            printf("file size: %lu\n", controlStart.file_size);
             return 1;
         }
         //printf("SN: %d\nPacket Size: %d\n", header->serialNumber, header->packet_size);

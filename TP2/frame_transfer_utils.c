@@ -112,9 +112,8 @@ void write_frame(int fd, frame_content content) {
           message[message_size - 2] = bcc2 ^ ESC_MASK;
         }
         else message[message_size - 2] = bcc2;
-        printf("BCC2 written: %x\n", bcc2);
-        message[message_size - 1] = flag;
 
+        message[message_size - 1] = flag;
         write(fd, message, message_size);
 
         /*printf("AFTER STUFFING\n");

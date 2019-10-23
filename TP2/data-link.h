@@ -13,7 +13,7 @@
 #include "frame_transfer_utils.h"
 
 #define TIMEOUT_SECS 3
-#define MAX_ATTEMPTS 3
+#define MAX_ATTEMPTS 50
 
 #define TRANSMITTER 0
 #define RECEIVER 1
