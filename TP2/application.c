@@ -261,10 +261,9 @@ int receiveFile(int fd, char* saveFolderPath) {
     sprintf(newFileName, "%s/%s", saveFolderPath, controlEnd.file_name);
     FILE* newFile = fopen(newFileName, "w");
 
-    if(newFile == NULL)
-    {
+    if(newFile == NULL) {
         printf("Unable to create file: %s\n", newFileName);
-        exit(1);
+        return 1;
     }
 
     fwrite(finalFileData, sizeof(char), controlEnd.file_size, newFile);
