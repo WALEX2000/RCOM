@@ -43,6 +43,7 @@ int main(int argc, char*argv[]) {
 }
 
 int sendFile(int fd, char* inputFileName) {
+    
     FILE* file = fopen(inputFileName, "r");
     if(file == NULL) {
         printf("Couldn't find file: %s\n", inputFileName);
@@ -115,6 +116,8 @@ int sendControlPacket(int fd, ControlPacketType type, char* fileName, long int f
 int sendFileData(int fd, FILE* file, long int fileSize) {
     const int nPackets = (fileSize/(MAX_DATA_PACKET_SIZE-4))+1;
     char* data = malloc(fileSize);
+    double totalWritten = 0;
+    char progressBar[11] = "          ";
     fread(data, fileSize, 1, file);
     for(unsigned int i = 0; i < nPackets; i++) {
         int realSize = MAX_DATA_PACKET_SIZE;
@@ -136,7 +139,20 @@ int sendFileData(int fd, FILE* file, long int fileSize) {
             return 1;
         }
 
-        printf("SENT PACKET %d\n",i);
+        if(i != (nPackets-1))
+            totalWritten += MAX_DATA_PACKET_SIZE-4;
+        else
+            totalWritten += fileSize % (MAX_DATA_PACKET_SIZE-4);
+        for(int j = 0; j < 10; j++) {
+            if(totalWritten/fileSize*10 > j)
+                progressBar[j] = '#';
+        }
+        printf("[%s] (%.2f%%)", progressBar, totalWritten/fileSize*100);
+        if(totalWritten/fileSize != 1) 
+            printf("\r");
+        else
+            printf("\n");
+        fflush(stdout);
     }
     return 0;
 }
@@ -222,8 +238,9 @@ int receiveFile(int fd, char* saveFolderPath) {
     struct controlPacket controlStart = parseControlPacket(readControlPacket, controlPacketSize);
     displayControlPacket(controlStart);
 
-    long int bytesRead = 0;
+    double bytesRead = 0;
     unsigned char* finalFileData = (unsigned char*) malloc(controlStart.file_size);
+    char progressBar[11] = "          ";
     while(bytesRead < controlStart.file_size) {
 
         //Read data
@@ -232,28 +249,33 @@ int receiveFile(int fd, char* saveFolderPath) {
         struct dataHead* header = parseDataHead(packet);
         if(header == NULL) {
             printf("ERROR reading data header, type is not data.\n");
-            printf("bytesRead: %lu\n", bytesRead);
+            printf("bytesRead: %lu\n", (long unsigned int)bytesRead);
             printf("file size: %lu\n", controlStart.file_size);
             return 1;
         }
-        //printf("SN: %d\nPacket Size: %d\n", header->serialNumber, header->packet_size);
 
-        memcpy(finalFileData + bytesRead, packet + 4, nRead - 4);
+        memcpy(finalFileData + (int)bytesRead, packet + 4, nRead - 4);
 
-        printf("DATA Packet: %d\n", header->serialNumber);
-        printf("Read: %d\n", nRead);
-        /*for(int i = 0; i < nRead; i++) {
-            printf("%d: %X\n", i, file[i]);
-        }*/
         bytesRead += nRead - 4;
+
+        for(int j = 0; j < 10; j++) {
+            if(bytesRead/controlStart.file_size*10 > j)
+                progressBar[j] = '#';
+        }
+        printf("[%s] (%.2f%%)", progressBar, bytesRead/controlStart.file_size*100);
+        if(bytesRead/controlStart.file_size != 1) 
+            printf("\r");
+        else
+            printf("\n");
+        
+        fflush(stdout);
     }
-    //printf("EXITED READ FILE LOOP\n");
    
     unsigned char* endControlPacket = malloc(100);
     int endControlPacketSize = llread(fd, endControlPacket);
    
-   struct controlPacket controlEnd = parseControlPacket(endControlPacket, endControlPacketSize);
-    displayControlPacket(controlEnd);
+    struct controlPacket controlEnd = parseControlPacket(endControlPacket, endControlPacketSize);
+    //displayControlPacket(controlEnd);
     //check that control end is the same as control Start to be sure there were no errors
 
     //save file into a new gif

@@ -45,9 +45,7 @@ void disable_timeout() {
 bool verify_bcc(unsigned char bytes[], int length) {
     unsigned char bcc2_check = 0;
     for (int i = 0; i < length ; i++)
-        bcc2_check = bcc2_check ^ bytes[i];   
-
-    printf("BCC2 read:%x\n", bytes[length-1]);   
+        bcc2_check = bcc2_check ^ bytes[i];    
 
     return bcc2_check == 0;
 }
