@@ -51,6 +51,15 @@ typedef struct {
   bool timed_out;
 } frame_content;
 
+typedef struct {
+	int sentFrames;
+	int receivedFrames;
+  int noTimeouts;
+	int noRR;
+	int noREJ;
+  double timeSpent;
+} Statistics;
+
 
 void write_control_frame(int fd, int address, int c_field);
 void write_frame(int fd, frame_content content);

@@ -4,6 +4,8 @@
 #define MODEMDEVICE "/dev/ttyS1"
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 
+extern Statistics data_link_statistics;
+
 struct global_vars {
     int type;
     struct termios previous_tio;
@@ -160,8 +162,11 @@ int llwrite(int fd, unsigned char * buffer, int length) {
         bool ack = read_ack_frame(fd, TIMEOUT_SECS, ns);
         content.c_field = ns? I_1 : I_0;
         if(ack) {
+            data_link_statistics.noRR++;
             ns = !ns;
             return length;
+        } else {
+            //data_link_statistics.noREJ++;
         }
     }
     return -1;
@@ -178,6 +183,7 @@ int llread(int fd, unsigned char * buffer) {
             return -1;
         }
         else if (frame.bytes == NULL) { // if NACK
+            data_link_statistics.noREJ++;
             printf("Bad bad bad gonna send nack!\n");
             int nack;
             if (frame.c_field == I_0) nack = REJ_0;
@@ -185,6 +191,7 @@ int llread(int fd, unsigned char * buffer) {
             write_control_frame(fd, A_SENDER, nack);       
             continue;
         } else { // if ACK
+            data_link_statistics.noRR++;
             int ack;
             if (frame.c_field == I_0) ack = RR_1;
             else if(frame.c_field == I_1) ack = RR_0;

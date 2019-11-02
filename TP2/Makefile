@@ -9,4 +9,5 @@ serialcom: $(OBJ)
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-clean: rm -f serialcom
+clean: 
+	rm -f serialcom

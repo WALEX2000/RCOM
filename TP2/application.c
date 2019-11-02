@@ -1,9 +1,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
 
 #include "data-link.h"
 #include "application.h"
+
+extern Statistics data_link_statistics;
+
+void printStatistics() {
+    printf("Frames sent: %d\n", data_link_statistics.sentFrames);
+    printf("Frames received: %d\n", data_link_statistics.receivedFrames);
+    printf("ACKS: %d\n", data_link_statistics.noRR);
+    printf("NACKS: %d\n", data_link_statistics.noREJ);
+    printf("Timeouts: %d\n", data_link_statistics.noTimeouts);
+    printf("Total time: %.03fs\n", data_link_statistics.timeSpent);
+}
 
 int main(int argc, char*argv[]) {
     if (argc < 3) {
@@ -39,6 +51,8 @@ int main(int argc, char*argv[]) {
         exit(1);
     }
 
+    printStatistics();
+
     return 0;
 }
 
@@ -59,6 +73,8 @@ int sendFile(int fd, char* inputFileName) {
         return 1;
     }
 
+    clock_t fileSendStart = clock();
+
     if(sendFileData(fd, file, fileSize) != 0) {
         printf("Error sending Data Packet\n");
         return 1;
@@ -68,6 +84,9 @@ int sendFile(int fd, char* inputFileName) {
         printf("Error sending End Control Packet\n");
         return 1;
     }
+
+    clock_t fileSendStop = clock();
+    data_link_statistics.timeSpent = ((double) (fileSendStop - fileSendStart)) / CLOCKS_PER_SEC;
 
     return 0;
 }
@@ -235,6 +254,8 @@ int receiveFile(int fd, char* saveFolderPath) {
     unsigned char* readControlPacket = malloc(100);
     int controlPacketSize = llread(fd, readControlPacket);
 
+    clock_t fileReceiveStart = clock();
+
     struct controlPacket controlStart = parseControlPacket(readControlPacket, controlPacketSize);
     displayControlPacket(controlStart);
 
@@ -273,6 +294,9 @@ int receiveFile(int fd, char* saveFolderPath) {
    
     unsigned char* endControlPacket = malloc(100);
     int endControlPacketSize = llread(fd, endControlPacket);
+
+    clock_t fileReceiveStop = clock();
+    data_link_statistics.timeSpent = ((double) (fileReceiveStop - fileReceiveStart)) / CLOCKS_PER_SEC;
    
     struct controlPacket controlEnd = parseControlPacket(endControlPacket, endControlPacketSize);
     //displayControlPacket(controlEnd);
@@ -289,6 +313,7 @@ int receiveFile(int fd, char* saveFolderPath) {
     }
 
     fwrite(finalFileData, sizeof(char), controlEnd.file_size, newFile);
+    free(finalFileData);
     fclose(newFile);
 
 
