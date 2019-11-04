@@ -81,6 +81,9 @@ void write_frame(int fd, frame_content content)
   unsigned char c = content.c_field;
   unsigned char bcc = a ^ c;
 
+  if (rand() % 5 == 0) { // erro no bcc de 20% 
+    bcc = ~bcc;
+
   if (c == I_0 || c == I_1)
   {
 
@@ -128,8 +131,11 @@ void write_frame(int fd, frame_content content)
       message[message_size - 3] = ESC_BYTE;
       message[message_size - 2] = bcc2 ^ ESC_MASK;
     }
-    else
-      message[message_size - 2] = bcc2;
+    else message[message_size - 2] = bcc2;
+
+    if (rand() % 5 == 0) // erro no bcc de 20% 
+      message[message_size - 2] = ~message[message_size - 2];
+
 
     message[message_size - 1] = flag;
     write(fd, message, message_size);
@@ -283,12 +289,13 @@ static frame_content read_frame_general(int fd, int expected_address, int *expec
 
   if (!verify_bcc(bytes, num_bytes_read))
     return content;
-
+  
   content.bytes = bytes;
   content.length = num_bytes_read - 1;
 
   return content;
 }
+
 
 frame_content read_frame(int fd, int expected_address, int *expected_cs, int expected_cs_size)
 {
