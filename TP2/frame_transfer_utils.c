@@ -165,7 +165,7 @@ static frame_content read_frame_general(int fd, int expected_address, int *expec
 {
   int state = START_STATE;
   unsigned char byte;
-  int num_bytes_read = 0, bytesArraySize = 2;
+  int num_bytes_read = 0, bytesArraySize = 128;
   unsigned char *bytes = malloc(bytesArraySize);
 
   frame_content content = create_frame_content();

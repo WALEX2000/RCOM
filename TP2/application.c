@@ -9,7 +9,7 @@
 extern Statistics data_link_statistics;
 
 void printStatistics() {
-    printf("Frames sent: %d\n", data_link_statistics.sentFrames);
+    printf("\nFrames sent: %d\n", data_link_statistics.sentFrames);
     printf("Frames received: %d\n", data_link_statistics.receivedFrames);
     printf("ACKS: %d\n", data_link_statistics.noRR);
     printf("NACKS: %d\n", data_link_statistics.noREJ);
@@ -73,7 +73,9 @@ int sendFile(int fd, char* inputFileName) {
         return 1;
     }
 
-    clock_t fileSendStart = clock();
+    double elapsedTime = 0;
+    struct timespec start, end;
+    clock_gettime(CLOCK_REALTIME, &start);
 
     if(sendFileData(fd, file, fileSize) != 0) {
         printf("Error sending Data Packet\n");
@@ -85,8 +87,10 @@ int sendFile(int fd, char* inputFileName) {
         return 1;
     }
 
-    clock_t fileSendStop = clock();
-    data_link_statistics.timeSpent = ((double) (fileSendStop - fileSendStart)) / CLOCKS_PER_SEC;
+    clock_gettime(CLOCK_REALTIME, &end);
+    elapsedTime = (end.tv_sec - start.tv_sec);
+    elapsedTime += (end.tv_nsec - start.tv_nsec) / 1000000000.0;
+    data_link_statistics.timeSpent = elapsedTime;
 
     return 0;
 }
@@ -229,7 +233,7 @@ struct dataHead* parseDataHead(unsigned char* head) {
 }
 
 void displayControlPacket(struct controlPacket packet) {
-    switch (packet.control_field)
+    /*switch (packet.control_field)
     {
     case CONTROL_START:
         printf("Control Field: START\n");
@@ -244,17 +248,19 @@ void displayControlPacket(struct controlPacket packet) {
     default:
         printf("Control Field: UNKNOWN (%d)\n", packet.control_field);
         break;
-    }
+    }*/
 
-    printf("File name: %s\n", packet.file_name);
-    printf("File size: %lu\n", packet.file_size);
+    printf("\nFile name: %s\n", packet.file_name);
+    printf("File size: %lu\n\n", packet.file_size);
 }
 
 int receiveFile(int fd, char* saveFolderPath) {
     unsigned char* readControlPacket = malloc(100);
     int controlPacketSize = llread(fd, readControlPacket);
 
-    clock_t fileReceiveStart = clock();
+    double elapsedTime = 0;
+    struct timespec start, end;
+    clock_gettime(CLOCK_REALTIME, &start);
 
     struct controlPacket controlStart = parseControlPacket(readControlPacket, controlPacketSize);
     displayControlPacket(controlStart);
@@ -295,8 +301,10 @@ int receiveFile(int fd, char* saveFolderPath) {
     unsigned char* endControlPacket = malloc(100);
     int endControlPacketSize = llread(fd, endControlPacket);
 
-    clock_t fileReceiveStop = clock();
-    data_link_statistics.timeSpent = ((double) (fileReceiveStop - fileReceiveStart)) / CLOCKS_PER_SEC;
+    clock_gettime(CLOCK_REALTIME, &end);
+    elapsedTime = (end.tv_sec - start.tv_sec);
+    elapsedTime += (end.tv_nsec - start.tv_nsec) / 1000000000.0;
+    data_link_statistics.timeSpent = elapsedTime;
    
     struct controlPacket controlEnd = parseControlPacket(endControlPacket, endControlPacketSize);
     //displayControlPacket(controlEnd);
