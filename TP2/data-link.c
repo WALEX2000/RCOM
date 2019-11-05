@@ -17,19 +17,19 @@ static struct global_vars globals;
 
 int llopen(int port, int type) {
     struct termios oldtio, newtio;
-    
-    //const int pathLen = 10;
-    //char path[] = "/dev/ttyS?";
+
+    const int pathLen = 10;
+    char path[] = "/dev/ttyS?";
     //const int pathLen = 12;
     //char path[] = "/dev/ttys00?";
-    const int pathLen = 10;
-    char path[] = "/dev/pts/?";
+    //const int pathLen = 10;
+    //char path[] = "/dev/pts/?";
     switch (port) {
         case COM0: path[pathLen-1] = '0'; break;
         case COM1: path[pathLen-1] = '1'; break;
         case COM2: path[pathLen-1] = '2'; break;
         case COM3: path[pathLen-1] = '3'; break;
-        case COM4: path[pathLen-1] = '4'; break;    
+        case COM4: path[pathLen-1] = '4'; break;
         default: printf("Unknown port: %d\n", port); return -1;
     }
     //printf("PATH: %s\n", path);
@@ -41,7 +41,7 @@ int llopen(int port, int type) {
 
     int fd = open(path, O_RDWR | O_NOCTTY );
     if (fd <0) {
-        perror(path); return -1; 
+        perror(path); return -1;
     }
 
     if ( tcgetattr(fd,&oldtio) == -1) { /* save current port settings */
@@ -63,8 +63,8 @@ int llopen(int port, int type) {
     newtio.c_cc[VTIME]    = 0;   /* inter-character timer unused */
     newtio.c_cc[VMIN]     = 1;   /* blocking read until 5 chars received */
 
-    /* 
-        VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a 
+    /*
+        VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a
         leitura do(s) próximo(s) caracter(es)
     */
 
@@ -147,7 +147,7 @@ int llclose(int fd) {
         printf("Disconnection timed out\n");
         return 0;
     }
-    else return -1;  
+    else return -1;
 }
 
 int llwrite(int fd, unsigned char * buffer, int length) {
@@ -188,7 +188,7 @@ int llread(int fd, unsigned char * buffer) {
             int nack;
             if (frame.c_field == I_0) nack = REJ_0;
             else if (frame.c_field == I_1) nack = REJ_1;
-            write_control_frame(fd, A_SENDER, nack);       
+            write_control_frame(fd, A_SENDER, nack);
             continue;
         } else { // if ACK
             data_link_statistics.noRR++;

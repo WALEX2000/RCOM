@@ -81,8 +81,11 @@ void write_frame(int fd, frame_content content)
   unsigned char c = content.c_field;
   unsigned char bcc = a ^ c;
 
-  if (rand() % 5 == 0) { // erro no bcc de 20% 
+
+  if (rand() % FER_DIV == 0) { // erro no bcc de 20%
     bcc = ~bcc;
+  }
+
 
   if (c == I_0 || c == I_1)
   {
@@ -133,7 +136,8 @@ void write_frame(int fd, frame_content content)
     }
     else message[message_size - 2] = bcc2;
 
-    if (rand() % 5 == 0) // erro no bcc de 20% 
+
+    if (rand() % FER_DIV == 0) // erro no bcc de 20%
       message[message_size - 2] = ~message[message_size - 2];
 
 
@@ -170,7 +174,7 @@ void write_control_frame(int fd, int address, int c_field)
 static frame_content read_frame_general(int fd, int expected_address, int *expected_c_values, int c_values_array_size, bool timeout_enabled)
 {
   int state = START_STATE;
-  unsigned char byte;
+  unsigned char byte, bcc1;
   int num_bytes_read = 0, bytesArraySize = 128;
   unsigned char *bytes = malloc(bytesArraySize);
 
@@ -206,6 +210,7 @@ static frame_content read_frame_general(int fd, int expected_address, int *expec
         state = START_STATE;
       break;
     case C_RCV_STATE:
+      bcc1 = byte;
       if ((expected_address ^ content.c_field) == byte)
       {
         if (content.c_field == I_0 || content.c_field == I_1)
@@ -287,9 +292,9 @@ static frame_content read_frame_general(int fd, int expected_address, int *expec
 
   data_link_statistics.receivedFrames++;
 
-  if (!verify_bcc(bytes, num_bytes_read))
+  if (!verify_bcc(bytes, num_bytes_read) || bcc1 != (expected_address ^ content.c_field))
     return content;
-  
+
   content.bytes = bytes;
   content.length = num_bytes_read - 1;
 

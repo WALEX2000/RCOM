@@ -18,6 +18,7 @@ void printStatistics() {
 }
 
 int main(int argc, char*argv[]) {
+  srand(time(NULL));
     if (argc < 3) {
       printf("Usage:\tserialcom COM type filepath\n");
       exit(1);
@@ -45,7 +46,7 @@ int main(int argc, char*argv[]) {
         if(sendFile(fd, filepath) != 0) printf("Error sending file!\n");
     }
     else receiveFile(fd, filepath);
-    
+
     if (llclose(fd) != 0) {
         printf("Error closing serial port\n");
         exit(1);
@@ -57,17 +58,17 @@ int main(int argc, char*argv[]) {
 }
 
 int sendFile(int fd, char* inputFileName) {
-    
+
     FILE* file = fopen(inputFileName, "r");
     if(file == NULL) {
         printf("Couldn't find file: %s\n", inputFileName);
         return 1;
     }
-    
+
     fseek(file, 0L, SEEK_END);
     long int fileSize = ftell(file);
     rewind(file);
-    
+
     if(sendControlPacket(fd, CONTROL_START, inputFileName, fileSize) != 0) {
         printf("Error sending Start Control Packet\n");
         return 1;
@@ -133,6 +134,7 @@ int sendControlPacket(int fd, ControlPacketType type, char* fileName, long int f
     int written = llwrite(fd, controlPacket, controlPacketSize);
     if(written != controlPacketSize) return 1;
 
+    free(controlPacket);
     return 0;
 }
 
@@ -171,18 +173,22 @@ int sendFileData(int fd, FILE* file, long int fileSize) {
                 progressBar[j] = '#';
         }
         printf("[%s] (%.2f%%)", progressBar, totalWritten/fileSize*100);
-        if(totalWritten/fileSize != 1) 
+        if(totalWritten/fileSize != 1)
             printf("\r");
         else
             printf("\n");
         fflush(stdout);
+
+        free(dataPacket);
     }
+
+    free(data);
     return 0;
 }
 
 int assignControlTypeValue(int type, int length, unsigned char* value, struct controlPacket* control) {
     long int size = 0;
-    
+
     switch (type)
     {
     case FILE_SIZE:
@@ -196,7 +202,7 @@ int assignControlTypeValue(int type, int length, unsigned char* value, struct co
         control->file_name = (char*) malloc(length);
         memcpy(control->file_name, value, length);
         break;
-    
+
     default:
         printf("ERROR: Unknown type in Control Packet: %d\n", type);
         return 1;
@@ -218,6 +224,8 @@ struct controlPacket parseControlPacket(unsigned char* packet, int packetSize) {
         memcpy(value, packet + i + 2, length);
         assignControlTypeValue(type, length, value, &control);
         i += length + 2;
+
+        free(value);
     }
 
     return control;
@@ -244,7 +252,7 @@ void displayControlPacket(struct controlPacket packet) {
     case CONTROL_END:
         printf("Control Field: END\n");
         break;
-    
+
     default:
         printf("Control Field: UNKNOWN (%d)\n", packet.control_field);
         break;
@@ -290,14 +298,17 @@ int receiveFile(int fd, char* saveFolderPath) {
                 progressBar[j] = '#';
         }
         printf("[%s] (%.2f%%)", progressBar, bytesRead/controlStart.file_size*100);
-        if(bytesRead/controlStart.file_size != 1) 
+        if(bytesRead/controlStart.file_size != 1)
             printf("\r");
         else
             printf("\n");
-        
+
         fflush(stdout);
+
+        free(header);
+        free(packet);
     }
-   
+
     unsigned char* endControlPacket = malloc(100);
     int endControlPacketSize = llread(fd, endControlPacket);
 
@@ -305,7 +316,7 @@ int receiveFile(int fd, char* saveFolderPath) {
     elapsedTime = (end.tv_sec - start.tv_sec);
     elapsedTime += (end.tv_nsec - start.tv_nsec) / 1000000000.0;
     data_link_statistics.timeSpent = elapsedTime;
-   
+
     struct controlPacket controlEnd = parseControlPacket(endControlPacket, endControlPacketSize);
     //displayControlPacket(controlEnd);
     //check that control end is the same as control Start to be sure there were no errors
@@ -324,6 +335,8 @@ int receiveFile(int fd, char* saveFolderPath) {
     free(finalFileData);
     fclose(newFile);
 
+    free(readControlPacket);
+    free(endControlPacket);
 
     return 0;
 }

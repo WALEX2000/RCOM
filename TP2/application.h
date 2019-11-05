@@ -1,6 +1,6 @@
 #pragma once
 
-#define MAX_DATA_PACKET_SIZE 1024
+#define MAX_DATA_PACKET_SIZE 128
 
 int sendFile(int fd, char* inputFileName);
 int receiveFile(int fd, char* saveFolderPath);
