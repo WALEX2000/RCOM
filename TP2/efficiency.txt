@@ -88,7 +88,33 @@ Timeout: 1s
 		28034.124ms(0 nacks, 25 timeouts)
 50%:	146856.841ms(0 nacks, 143 timeouts)
 		
-		
+---------TESTES DE T_PROP---------
+File Size: 10968 bytes
+Max Packet Size: 128 bytes
+Baudrate: B3840
+FER: 0%
+Timeout: 1s
+
+		T_PROP
+0ms:	3431.040ms
+		3432.080ms
+		3430.828ms
+10ms: 	4331.069ms
+		4331.506ms
+		4330.888ms
+50ms:	7930.847ms
+		7932.092ms
+		7932.980ms
+100ms:	12431.796ms
+		12431.628ms
+		12431.316ms
+500ms:	48434.733ms
+		48432.136ms
+		48432.352ms
+1s:		93432.370ms
+		93431.849ms
+		93432.132ms
+
 		
 		
 		

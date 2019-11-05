@@ -82,9 +82,9 @@ void write_frame(int fd, frame_content content)
   unsigned char bcc = a ^ c;
 
 
-  if (rand() % FER_DIV == 0) {
+  /*if (rand() % FER_DIV == 0) {
     bcc = ~bcc;
-  }
+  }*/
 
 
   if (c == I_0 || c == I_1)
@@ -175,7 +175,7 @@ void write_control_frame(int fd, int address, int c_field)
 static frame_content read_frame_general(int fd, int expected_address, int *expected_c_values, int c_values_array_size, bool timeout_enabled)
 {
   int state = START_STATE;
-  unsigned char byte, bcc1;
+  unsigned char byte;
   int num_bytes_read = 0, bytesArraySize = 128;
   unsigned char *bytes = malloc(bytesArraySize);
 
@@ -211,7 +211,6 @@ static frame_content read_frame_general(int fd, int expected_address, int *expec
         state = START_STATE;
       break;
     case C_RCV_STATE:
-      bcc1 = byte;
       if ((expected_address ^ content.c_field) == byte)
       {
         if (content.c_field == I_0 || content.c_field == I_1)
@@ -293,7 +292,7 @@ static frame_content read_frame_general(int fd, int expected_address, int *expec
 
   data_link_statistics.receivedFrames++;
 
-  if (!verify_bcc(bytes, num_bytes_read) || bcc1 != (expected_address ^ content.c_field))
+  if (!verify_bcc(bytes, num_bytes_read))
     return content;
 
   content.bytes = bytes;
@@ -305,7 +304,9 @@ static frame_content read_frame_general(int fd, int expected_address, int *expec
 
 frame_content read_frame(int fd, int expected_address, int *expected_cs, int expected_cs_size)
 {
-  return read_frame_general(fd, expected_address, expected_cs, expected_cs_size, false);
+  frame_content frame = read_frame_general(fd, expected_address, expected_cs, expected_cs_size, false);
+  usleep(T_PROP*1000);
+  return frame;
 }
 
 frame_content read_frame_timeout(int fd, int expected_address, int *expected_cs, int expected_cs_size, int timeout_s)
@@ -313,6 +314,7 @@ frame_content read_frame_timeout(int fd, int expected_address, int *expected_cs,
   setup_timeout(fd, timeout_s);
   frame_content frame = read_frame_general(fd, expected_address, expected_cs, expected_cs_size, true);
   disable_timeout();
+  usleep(T_PROP*1000);
   return frame;
 }
 
