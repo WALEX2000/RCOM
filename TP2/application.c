@@ -14,7 +14,7 @@ void printStatistics() {
     printf("ACKS: %d\n", data_link_statistics.noRR);
     printf("NACKS: %d\n", data_link_statistics.noREJ);
     printf("Timeouts: %d\n", data_link_statistics.noTimeouts);
-    printf("Total time: %.03fs\n", data_link_statistics.timeSpent);
+    printf("Total time: %.03fms\n", data_link_statistics.timeSpent);
 }
 
 int main(int argc, char*argv[]) {
@@ -89,8 +89,8 @@ int sendFile(int fd, char* inputFileName) {
     }
 
     clock_gettime(CLOCK_REALTIME, &end);
-    elapsedTime = (end.tv_sec - start.tv_sec);
-    elapsedTime += (end.tv_nsec - start.tv_nsec) / 1000000000.0;
+    elapsedTime = (end.tv_sec - start.tv_sec)*1000;
+    elapsedTime += (end.tv_nsec - start.tv_nsec) / 1000000.0;
     data_link_statistics.timeSpent = elapsedTime;
 
     return 0;
@@ -313,8 +313,8 @@ int receiveFile(int fd, char* saveFolderPath) {
     int endControlPacketSize = llread(fd, endControlPacket);
 
     clock_gettime(CLOCK_REALTIME, &end);
-    elapsedTime = (end.tv_sec - start.tv_sec);
-    elapsedTime += (end.tv_nsec - start.tv_nsec) / 1000000000.0;
+    elapsedTime = (end.tv_sec - start.tv_sec)*1000;
+    elapsedTime += (end.tv_nsec - start.tv_nsec) / 1000000.0;
     data_link_statistics.timeSpent = elapsedTime;
 
     struct controlPacket controlEnd = parseControlPacket(endControlPacket, endControlPacketSize);

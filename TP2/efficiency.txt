@@ -1,0 +1,96 @@
+-------TESTES DE BAUDRATE----------
+File Size: 10968 bytes
+Max Packet Size: 1028 bytes
+FER: 0%
+T_PROP: 0ms
+Timeout: 1s
+
+		BAUDRATES
+B38400:	2940.635ms
+		2940.642ms
+		2940.720ms
+B19200: 5889.100ms
+		5889.351ms
+		5889.195ms
+B9600:	11775.177ms
+		11775.168ms
+		11774.874ms
+B4800:	23551.214ms
+		23546.658ms
+		23549.235ms
+B2400: 	47092.086ms
+		47092.069ms
+		47092.002ms
+
+-------TESTES DE MAX_PACKET_SIZE----------
+File Size: 10968 bytes
+Baudrate: B3840
+FER: 0%
+T_PROP: 0ms
+Timeout: 1s
+
+		MAX_PACKET_SIZE
+1024B:	2946.242ms
+		2946.171ms
+		2946.194ms
+512B: 	3013.120ms
+		3012.936ms
+		3013.172ms
+256B:	3149.482ms
+		3149.307ms
+		3149.739ms
+128B:	3426.391ms
+		3426.075ms
+		3427.237ms
+64B:	4015.777ms
+		4017.562ms
+		4017.439ms
+32B:	5324.923ms
+		5321.792ms
+		5320.696ms
+
+---------TESTES DE FER---------
+File Size: 10968 bytes
+Max Packet Size: 128 bytes
+Baudrate: B3840
+T_PROP: 0ms
+Timeout: 1s
+
+		FER (BCC2)
+0%:		3425.948ms (0 nacks, 0 timeouts)
+		3425.788ms (0 nacks, 0 timeouts)
+		3425.552ms (0 nacks, 0 timeouts)
+4%: 	3583.649ms (4 nacks, 0 timeouts)
+		3503.933ms (2 nacks, 0 timeouts)
+		3579.726ms (4 nacks, 0 timeouts)
+10%:	3620.407ms (5 nacks, 0 timeouts)
+		3640.512ms (6 nacks, 0 timeouts)
+		3737.968ms (9 nacks, 0 timeouts)
+20%:	4390.409ms (25 nacks, 0 timeouts)
+		4269.432ms (22 nacks, 0 timeouts)
+		4236.475ms (21 nacks, 0 timeouts)
+50%: 	5923.488ms (70 nacks, 0 timeouts)
+		6264.353ms (74 nacks, 0 timeouts)
+		7433.649ms (106 nacks, 0 timeouts)
+
+		FER (BCC1)
+0%:		3425.449ms (0 nacks, 0 timeouts)
+		3426.199ms (0 nacks, 0 timeouts)
+		3425.432ms (0 nacks, 0 timeouts)
+4%: 	10348.964ms(0 nacks, 7 timeouts)
+		13233.913ms(0 nacks, 10 timeouts)
+		7347.928ms (0 nacks, 4 timeouts)
+10%:	20196.547ms(0 nacks, 17 timeouts)
+		19118.499ms(0 nacks, 16 timeouts)
+		17042.559ms(0 nacks, 14 timeouts)
+20%:	31043.706ms(0 nacks, 28 timeouts)
+		29079.715ms(0 nacks, 26 timeouts)
+		28034.124ms(0 nacks, 25 timeouts)
+50%:	146856.841ms(0 nacks, 143 timeouts)
+		
+		
+		
+		
+		
+
+

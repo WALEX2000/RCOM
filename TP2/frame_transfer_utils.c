@@ -82,7 +82,7 @@ void write_frame(int fd, frame_content content)
   unsigned char bcc = a ^ c;
 
 
-  if (rand() % FER_DIV == 0) { // erro no bcc de 20%
+  if (rand() % FER_DIV == 0) {
     bcc = ~bcc;
   }
 
@@ -136,9 +136,10 @@ void write_frame(int fd, frame_content content)
     }
     else message[message_size - 2] = bcc2;
 
-
+/*
     if (rand() % FER_DIV == 0) // erro no bcc de 20%
       message[message_size - 2] = ~message[message_size - 2];
+*/
 
 
     message[message_size - 1] = flag;

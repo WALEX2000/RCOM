@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <signal.h>
 
-#define FER_DIV 500000
+#define FER_DIV 2
 
 #define CTRL_S BIT(6)
 #define CTRL_R BIT(7)
