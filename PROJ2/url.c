@@ -42,8 +42,9 @@ int parseUrl(char *urlString, Url *url)
 {
 
     //Check for 'ftp://' prefix
-    char ftpPrefix[6];
+    char ftpPrefix[7];
     strncpy(ftpPrefix, urlString, 6);
+    ftpPrefix[6] = '\0';
     if (strcmp(ftpPrefix, "ftp://") != 0)
     {
         printf("Url missing prefix 'ftp://'\n");
