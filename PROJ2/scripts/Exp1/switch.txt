@@ -1,0 +1,7 @@
+enable
+8nortel
+configure terminal
+    no vlan 2-4094
+    exit
+copy flash:gnuy-clean startup-config
+reload

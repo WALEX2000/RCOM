@@ -1,0 +1,4 @@
+enable
+8nortel
+copy flash:tuxy-clean startup-config
+reload
